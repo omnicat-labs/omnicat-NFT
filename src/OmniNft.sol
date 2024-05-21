@@ -10,34 +10,28 @@ import { AccessControlEnumerable } from "@openzeppelin/contracts/access/extensio
 import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
+import { OmniNFTBase } from "./OmniNftBase.sol";
 
 import { AccessControlAdminProtection } from "./utils/AccessControlAdminProtection.sol";
 
 contract OmniNFT is
-    ReentrancyGuard,
-    Pausable,
-    AccessControlAdminProtection,
-    ONFT721
+    OmniNFTBase
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
 
     // ===================== Constants ===================== //
-    uint256 public dstGasReserve = 1e5;
-    uint16 public immutable CHAIN_ID;
-    string public immutable baseURI;
-    uint256 public MINT_COST = 250e18;
 
     // AccessControl roles.
 
     // External contracts.
-    IOmniCat public omnicat;
 
     // ===================== Storage ===================== //
 
     // ===================== Constructor ===================== //
     constructor(
-        uint16 _chain_id,
+        BaseChainInfo _baseChainInfo,
         IOmniCat _omnicat,
         string memory _name,
         string memory _symbol,
@@ -45,97 +39,104 @@ contract OmniNFT is
         address _lzEndpoint,
         string calldata _baseURI
     )
-        ONFT721(_name, _symbol, _minGasToTransfer, _lzEndpoint)
+        OmniNFTBase(_chain_id, _omnicat, _name, _symbol, _minGasToTransfer, _lzEndpoint, _baseURI)
     {
-        // Grant admin role.
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        CHAIN_ID = _chain_id;
-        omnicat = _omnicat;
-        baseURI = _baseURI;
+        setTrustedRemoteAddress(_baseChainInfo.BASE_CHAIN_ID, _baseChainInfo.BASE_CHAIN_ADDRESS);
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
-
-    function pauseContract()
-        external
-        nonReentrant
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        _pause();
-    }
-
-    function unpauseContract()
-        external
-        nonReentrant
-        onlyRole(DEFAULT_ADMIN_ROLE)
-    {
-        _unpause();
-    }
-
-    function setDstGasReserve(uint256 _dstGasReserve) whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) external {
-        dstGasReserve = _dstGasReserve;
-    }
-
-    // TODO:- remove this function?
-    function extractNative(uint256 amount) onlyRole(DEFAULT_ADMIN_ROLE) external {
-        if(amount == 0){
-            amount = address(this).balance;
-        }
-        payable(_msgSender()).transfer(amount);
-    }
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
 
 
     // ===================== Public Functions ===================== //
-    // TODO:- remove this maybe?
-    receive() external payable {}
 
     // TODO:- this is only an interchain function, that will call mint on OmniNFTA
-    function mint() external payable {
-        revert("not implemented");
-    }
+    function mint() external payable nonReentrant() {
+        bytes memory payload = abi.encode(msg.sender);
+        payload = abi.encodePacked(MessageType.MINT, payload);
 
-    // TODO:- This is only an interchain transaction. burns a token from the user, and credits omni to the user.
-    function burn() external {
-        revert("not implemented");
-    }
-
-    
-
-
-    // ===================== interval Functions ===================== //
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
-    }
-
-    /**
-     * @dev Private function to handle token transfers using IOFTV2 interface.
-     * @param from Address sending the tokens.
-     * @param to Address receiving the tokens.
-     * @param amount Amount of tokens to transfer.
-     */
-    function _transferTokens(address from, address to, uint256 amount, uint16 _dstChainId) private {
-        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
-            refundAddress: payable(from),
+        LzCallParams memory lzCallParams = LzCallParams({
+            refundAddress: payable(msg.sender),
             zroPaymentAddress: address(0),
             adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
         });
 
-        (uint256 fee, )  = omnicat.estimateSendFee(
-            _dstChainId,
-            bytes32(abi.encode(to)),
-            amount,
+        (uint256 nativeFee, ) = omnicat.estimateSendAndCallFee(
+            BASE_CHAIN_INFO.BASE_CHAIN_ID,
+            BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS,
+            MINT_COST,
+            payload,
+            dstGasReserve,
             false,
-            abi.encodePacked(uint16(1), uint256(dstGasReserve))
+            lzCallParams.adapterParams
         );
+        require(msg.value >= nativeFee, "not enough fees");
+        omnicat.sendAndCall{value: nativeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS, MINT_COST, payload, dstGasReserve, lzCallParams);
+    }
 
-        omnicat.sendFrom{value: fee}(
-            from,
-            _dstChainId,
-            bytes32(abi.encode(to)),
-            amount,
-            lzCallParams
+    // TODO:- This is only an interchain transaction. burns a token from the user, and credits omni to the user.
+    function burn(uint256 tokenId) external payable nonReentrant() {
+        require(_ownerOf(tokenId) == msg.sender, "not owner");
+        _burn(tokenId);
+        bytes memory payload = abi.encode(msg.sender, tokenId);
+        payload = abi.encodePacked(MessageType.BURN, payload);
+
+        LzCallParams memory lzCallParams = LzCallParams({
+            refundAddress: payable(msg.sender),
+            zroPaymentAddress: address(0),
+            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+        });
+
+        (uint256 omniSendFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, msg.sender, MINT_COST, false, adapterParams);
+        (uint256 nativeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
+
+        require(msg.value >= omniSendFee + nativeFee, "not enough to cover fees");
+        _lzSend(
+            BASE_CHAIN_INFO.BASE_CHAIN_ID,
+            payload,
+            payable(msg.sender),
+            address(0),
+            lzCallParams.adapterParams,
+            nativeFee
         );
     }
+
+    // TODO:- override this to accept only transactions.
+    function _nonblockingLzReceive(
+        uint16 _srcChainId,
+        bytes memory _srcAddress,
+        uint64, /*_nonce*/
+        bytes memory _payload
+    ) internal virtual override {
+        // decode and load the toAddress
+        uint8 value = uint8(_payload[0]);
+        MessageType messageType = MessageType(value);
+        if(messageType != MessageType.TRANSFER){
+            // TODO:- see if you should revert this or just return?
+            return;
+        }
+
+        (bytes memory toAddressBytes, uint[] memory tokenIds) = abi.decode(_payload[1:], (bytes, uint[]));
+
+        address toAddress;
+        assembly {
+            toAddress := mload(add(toAddressBytes, 20))
+        }
+
+        uint nextIndex = _creditTill(_srcChainId, toAddress, 0, tokenIds);
+        if (nextIndex < tokenIds.length) {
+            // not enough gas to complete transfers, store to be cleared in another tx
+            bytes32 hashedPayload = keccak256(_payload);
+            storedCredits[hashedPayload] = StoredCredit(_srcChainId, toAddress, nextIndex, true);
+            emit CreditStored(hashedPayload, _payload);
+        }
+
+        emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, tokenIds);
+    }
+
+
+
+
+    // ===================== interval Functions ===================== //
 }
