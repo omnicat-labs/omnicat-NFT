@@ -67,7 +67,7 @@ contract OmniNFTA is
         // decode and load the toAddress
         bytes memory payloadWithoutMessage;
         assembly {
-            payloadWithoutMessage := add(_payload,32)
+            payloadWithoutMessage := add(_payload,1)
         }
 
         uint8 value = uint8(_payload[0]);

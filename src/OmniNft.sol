@@ -35,6 +35,7 @@ contract OmniNFT is
         OmniNFTBase(_baseChainInfo, _omnicat, _name, _symbol, _minGasToTransfer, _lzEndpoint, _baseURI)
     {
         // setTrustedRemoteAddress(_baseChainInfo.BASE_CHAIN_ID, abi.encodePacked(_baseChainInfo.BASE_CHAIN_ADDRESS));
+        // setMinDstGas(_baseChainInfo.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _minGasToTransfer);
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -106,7 +107,7 @@ contract OmniNFT is
     ) internal virtual override {
         bytes memory payloadWithoutMessage;
         assembly {
-            payloadWithoutMessage := add(_payload,32)
+            payloadWithoutMessage := add(_payload,1)
         }
         // decode and load the toAddress
         uint8 value = uint8(_payload[0]);
