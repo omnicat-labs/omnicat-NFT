@@ -10,7 +10,7 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { BaseTest } from "./BaseTest.sol";
 
 contract testTransactions is BaseTest {
-    function testNormalMintAndTransaction() public {
+    function testNormalMintTransactionBurn() public {
         vm.startPrank(user1);
         omniNFTA.mint();
         vm.assertEq(omniNFTA.balanceOf(user1), 1);
@@ -19,6 +19,13 @@ contract testTransactions is BaseTest {
         omniNFTA.safeTransferFrom(user1, user2, 1);
         vm.assertEq(omniNFTA.balanceOf(user2), 1);
         vm.assertEq(omniNFTA.ownerOf(1), user2);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        omniNFTA.burn(1);
+        vm.assertEq(omniNFTA.balanceOf(user2), 0);
+        vm.expectRevert("ERC721: invalid token ID");
+        omniNFTA.ownerOf(1);
         vm.stopPrank();
     }
 
