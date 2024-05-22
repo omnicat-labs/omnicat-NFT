@@ -36,8 +36,8 @@ contract BaseTest is Test {
         layerZeroEndpointMock1 = new LZEndpointMock(firstChainId);
         layerZeroEndpointMock2 = new LZEndpointMock(secondChainId);
 
-        omnicatMock1 = new OmniCatMock(address(layerZeroEndpointMock1), 100e30, 18);
-        omnicatMock2 = new OmniCatMock(address(layerZeroEndpointMock2), 100e30, 18);
+        omnicatMock1 = new OmniCatMock(address(layerZeroEndpointMock1), 100e30, 8);
+        omnicatMock2 = new OmniCatMock(address(layerZeroEndpointMock2), 100e30, 8);
 
         omnicatMock1.setMinDstGas(secondChainId, uint16(0), 1e5);
         omnicatMock1.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omnicatMock2)));

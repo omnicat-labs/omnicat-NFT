@@ -70,7 +70,23 @@ contract OmniNFT is
         omnicat.sendAndCall{value: nativeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, MINT_COST, payload, dstGasReserve, lzCallParams);
     }
 
-    // TODO:- This is only an interchain transaction. burns a token from the user, and credits omni to the user.
+    function estimateBurnFees(uint256 tokenId) external view returns (uint256) {
+        bytes memory payload = abi.encode(msg.sender, tokenId);
+        payload = abi.encodePacked(MessageType.BURN, payload);
+
+        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
+            refundAddress: payable(msg.sender),
+            zroPaymentAddress: address(0),
+            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+        });
+        bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
+
+        (uint256 omniSendFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
+        (uint256 nativeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
+
+        return omniSendFee + nativeFee;
+    }
+
     function burn(uint256 tokenId) external payable override nonReentrant() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
         _burn(tokenId);

@@ -27,7 +27,7 @@ contract OmniNFTBase is
     using SafeCast for uint256;
 
     // ===================== Constants ===================== //
-    uint64 public dstGasReserve = 1e5;
+    uint64 public dstGasReserve = 1e6;
     BaseChainInfo public BASE_CHAIN_INFO;
     string public baseURI;
     uint256 public MINT_COST = 250000e18;
