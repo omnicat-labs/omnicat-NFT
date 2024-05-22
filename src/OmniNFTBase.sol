@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import { ONFT721 } from "@LayerZero-Examples/contracts/token/onft721/ONFT721.sol";
+import { IONFT721 } from "@LayerZero-Examples/contracts/token/onft721/interfaces/IONFT721.sol";
+import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { AccessControlEnumerable } from "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
-import { ReentrancyGuard } from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import { Pausable } from "@openzeppelin/contracts/utils/Pausable.sol";
+import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
+import { IAccessControlEnumerable } from "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
+import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
 
@@ -24,10 +27,10 @@ contract OmniNFTBase is
     using SafeCast for uint256;
 
     // ===================== Constants ===================== //
-    uint256 public dstGasReserve = 1e5;
-    BASE_CHAIN_INFO public immutable BASE_CHAIN_INFO;
-    string public immutable baseURI;
-    uint256 public MINT_COST = 250e18;
+    uint64 public dstGasReserve = 1e5;
+    BaseChainInfo public BASE_CHAIN_INFO;
+    string public baseURI;
+    uint256 public MINT_COST = 250000e18;
 
     // AccessControl roles.
 
@@ -38,13 +41,13 @@ contract OmniNFTBase is
 
     // ===================== Constructor ===================== //
     constructor(
-        BaseChainInfo _baseChainInfo,
+        BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
         string memory _name,
         string memory _symbol,
         uint _minGasToTransfer,
         address _lzEndpoint,
-        string calldata _baseURI
+        string memory _baseURIstring
     )
         ONFT721(_name, _symbol, _minGasToTransfer, _lzEndpoint)
     {
@@ -52,7 +55,7 @@ contract OmniNFTBase is
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         BASE_CHAIN_INFO = _baseChainInfo;
         omnicat = _omnicat;
-        baseURI = _baseURI;
+        baseURI = _baseURIstring;
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -73,7 +76,7 @@ contract OmniNFTBase is
         _unpause();
     }
 
-    function setDstGasReserve(uint256 _dstGasReserve) whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) external {
+    function setDstGasReserve(uint64 _dstGasReserve) whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) external {
         dstGasReserve = _dstGasReserve;
     }
 
@@ -89,12 +92,17 @@ contract OmniNFTBase is
 
 
     // ===================== Public Functions ===================== //
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControlEnumerable, ONFT721) returns (bool) {
+        return interfaceId == type(IAccessControlEnumerable).interfaceId || interfaceId == type(IONFT721).interfaceId || super.supportsInterface(interfaceId);
+    }
+
     // TODO:- remove this maybe?
     receive() external payable {}
 
-    function mint() external virtual {}
+    function mint() external payable virtual {}
 
-    function burn(uint256 tokenId) external virtual {}
+    function burn(uint256 tokenId) external payable virtual {}
 
     // TODO:- make this send have the payload with MessageType.TRANSFER
     function _send(
