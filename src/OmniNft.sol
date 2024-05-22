@@ -45,19 +45,19 @@ contract OmniNFT is
 
     // ===================== Public Functions ===================== //
 
-    // TODO:- this is only an interchain function, that will call mint on OmniNFTA
-    function mint() external payable override nonReentrant() {
+    function estimateMintFees() external view returns (uint256) {
         bytes memory payload = abi.encode(msg.sender);
         payload = abi.encodePacked(MessageType.MINT, payload);
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(msg.sender),
             zroPaymentAddress: address(0),
-            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+            adapterParams: abi.encodePacked(uint16(1), uint256(2*dstGasReserve))
         });
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
-        (uint256 nativeFee, ) = omnicat.estimateSendAndCallFee(
+        (uint256 nativeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
+        (uint256 omniFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             baseChainAddressBytes,
             MINT_COST,
@@ -66,8 +66,33 @@ contract OmniNFT is
             false,
             lzCallParams.adapterParams
         );
-        require(msg.value >= nativeFee, "not enough fees");
-        omnicat.sendAndCall{value: nativeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, MINT_COST, payload, dstGasReserve, lzCallParams);
+        return nativeFee + omniFee;
+    }
+
+    // TODO:- this is only an interchain function, that will call mint on OmniNFTA
+    function mint() external payable override nonReentrant() {
+        bytes memory payload = abi.encode(msg.sender);
+        payload = abi.encodePacked(MessageType.MINT, payload);
+
+        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
+            refundAddress: payable(msg.sender),
+            zroPaymentAddress: address(0),
+            adapterParams: abi.encodePacked(uint16(1), uint256(2*dstGasReserve))
+        });
+        bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
+
+        (uint256 nativeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
+        (uint256 omniFee, ) = omnicat.estimateSendAndCallFee(
+            BASE_CHAIN_INFO.BASE_CHAIN_ID,
+            baseChainAddressBytes,
+            MINT_COST,
+            payload,
+            dstGasReserve,
+            false,
+            lzCallParams.adapterParams
+        );
+        require(msg.value >= (nativeFee + omniFee), "not enough fees");
+        omnicat.sendAndCall{value: omniFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, MINT_COST, payload, dstGasReserve, lzCallParams);
     }
 
     function estimateBurnFees(uint256 tokenId) external view returns (uint256) {
@@ -103,7 +128,7 @@ contract OmniNFT is
         (uint256 omniSendFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
         (uint256 nativeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
 
-        require(msg.value >= omniSendFee + nativeFee, "not enough to cover fees");
+        require(msg.value >= (omniSendFee + nativeFee), "not enough to cover fees");
         _lzSend(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             payload,

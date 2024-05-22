@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
+import { IOFTReceiverV2 } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/IOFTReceiverV2.sol";
 import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract OmniNFTA is
-    OmniNFTBase
+    OmniNFTBase,
+    IOFTReceiverV2
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
@@ -134,6 +136,29 @@ contract OmniNFTA is
             _lzSend(_srcChainId, payload, payable(address(this)), address(0), lzCallParams.adapterParams, nativeFee);
             emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokenIds);
             // sendFrom{value: nativeFee}(address(this), _srcChainId, abi.encodePacked(userAddress), nextTokenIdMint, address(this), address(0), lzCallParams.adapterParams);
+        }
+    }
+
+    // This is called by interchain mints
+    function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 , uint _amount, bytes calldata _payload) external override {
+        require(msg.sender == address(omnicat));
+        require(_amount == MINT_COST);
+
+        MessageType messageType = MessageType(uint8(_payload[0]));
+        if(messageType == MessageType.MINT){
+            (address userAddress) = abi.decode(_payload[1:], (address));
+            _mint(address(this), ++nextTokenIdMint);
+
+            bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
+            bytes memory payload = abi.encode(abi.encodePacked(userAddress), _toSingletonArray(nextTokenIdMint));
+            payload = abi.encodePacked(MessageType.TRANSFER, payload);
+
+            (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
+            if(address(this).balance < nativeFee){
+                // TODO:- make it such that we can call a function to send the funds to the right address.
+            }
+            _lzSend(_srcChainId, payload, payable(address(this)), address(0), adapterParams, nativeFee);
+            // emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokenIds);
         }
     }
 
