@@ -60,7 +60,7 @@ contract testTransactions is BaseTest {
         vm.startPrank(user1);
         uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
         uint256 mintFee = omniNFT.estimateMintFees();
-        omniNFT.mint{value: 2*mintFee, gas: 1e9}(2);
+        omniNFT.mint{value: 2*mintFee, gas: 1e9}(1);
         vm.assertEq(omniNFT.balanceOf(user1), 1);
         vm.assertEq(omniNFT.ownerOf(1), user1);
         vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + omniNFTA.MINT_COST());

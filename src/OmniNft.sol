@@ -70,8 +70,9 @@ contract OmniNFT is
     }
 
     // TODO:- this is only an interchain function, that will call mint on OmniNFTA
-    function mint(uint256 ) external payable override nonReentrant() {
-        bytes memory payload = abi.encode(msg.sender);
+    function mint(uint256 mintNumber) external payable override nonReentrant() {
+        require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
+        bytes memory payload = abi.encode(msg.sender, mintNumber);
         payload = abi.encodePacked(MessageType.MINT, payload);
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
@@ -85,14 +86,14 @@ contract OmniNFT is
         (uint256 omniFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             baseChainAddressBytes,
-            MINT_COST,
+            mintNumber*MINT_COST,
             payload,
             dstGasReserve,
             false,
             lzCallParams.adapterParams
         );
         require(msg.value >= (nativeFee + omniFee), "not enough fees");
-        omnicat.sendAndCall{value: omniFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, MINT_COST, payload, dstGasReserve, lzCallParams);
+        omnicat.sendAndCall{value: omniFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, dstGasReserve, lzCallParams);
     }
 
     function estimateBurnFees(uint256 tokenId) external view returns (uint256) {

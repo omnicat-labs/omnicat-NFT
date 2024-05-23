@@ -132,15 +132,27 @@ contract OmniNFTA is
     // This is called by interchain mints
     function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 , uint _amount, bytes calldata _payload) external override {
         require(msg.sender == address(omnicat));
-        require(_amount == MINT_COST);
 
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){
-            (address userAddress) = abi.decode(_payload[1:], (address));
-            _mint(address(this), ++nextTokenIdMint);
+            (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
+            if(_amount < mintNumber*MINT_COST){
+                // create refund for user
+                return;
+            }
+            uint256[] memory tokens = new uint256[](mintNumber);
+            for(uint256 i=0;i<mintNumber;){
+                _mint(address(this), ++nextTokenIdMint);
+                tokens[i] = nextTokenIdMint;
+                unchecked {
+                    i++;
+                }
+            }
+
+            // _mint(address(this), ++nextTokenIdMint);
 
             bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
-            bytes memory payload = abi.encode(abi.encodePacked(userAddress), _toSingletonArray(nextTokenIdMint));
+            bytes memory payload = abi.encode(abi.encodePacked(userAddress), tokens);
             payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
             (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
