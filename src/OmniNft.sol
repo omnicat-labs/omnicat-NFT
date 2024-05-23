@@ -70,7 +70,7 @@ contract OmniNFT is
     }
 
     // TODO:- this is only an interchain function, that will call mint on OmniNFTA
-    function mint() external payable override nonReentrant() {
+    function mint(uint256 ) external payable override nonReentrant() {
         bytes memory payload = abi.encode(msg.sender);
         payload = abi.encodePacked(MessageType.MINT, payload);
 

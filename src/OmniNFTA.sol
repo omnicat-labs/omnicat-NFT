@@ -47,9 +47,19 @@ contract OmniNFTA is
     // ===================== Public Functions ===================== //
 
     // TODO:- This is not an interchain transaction. mints a token for the user.
-    function mint() external override payable nonReentrant() {
-        omnicat.safeTransferFrom(msg.sender, address(this), MINT_COST);
-        _safeMint(msg.sender, ++nextTokenIdMint);
+    function mint(uint256 mintNumber) external override payable nonReentrant() {
+        require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
+        require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
+        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
+        require(msg.value == 0, "do not send funds here");
+
+        omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
+        for(uint256 i=0;i<mintNumber;){
+            _safeMint(msg.sender, ++nextTokenIdMint);
+            unchecked {
+                i++;
+            }
+        }
     }
 
     // TODO:- This is not an interchain transaction. burns a token from the user, and credits omni to the user.
@@ -117,26 +127,6 @@ contract OmniNFTA is
             }
             omnicat.sendFrom{value: nativeFee}(address(this), _srcChainId, userAddressBytes, MINT_COST, lzCallParams);
         }
-        else if(messageType == MessageType.MINT){
-            (address userAddress) = abi.decode(payloadWithoutMessage, (address));
-            _safeMint(address(this), ++nextTokenIdMint);
-            ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
-                refundAddress: payable(address(this)),
-                zroPaymentAddress: address(0),
-                adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
-            });
-            
-            (uint256 nativeFee, ) = estimateSendFee(_srcChainId, abi.encodePacked(userAddress), nextTokenIdMint, false, lzCallParams.adapterParams);
-            if(address(this).balance < nativeFee){
-                // TODO:- make it such that we can call a function to send the funds to the right address.
-            }
-            uint256[] memory tokenIds = new uint256[](1);
-            tokenIds[0] = nextTokenIdMint;
-            bytes memory payload = abi.encode(userAddress, tokenIds);
-            _lzSend(_srcChainId, payload, payable(address(this)), address(0), lzCallParams.adapterParams, nativeFee);
-            emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokenIds);
-            // sendFrom{value: nativeFee}(address(this), _srcChainId, abi.encodePacked(userAddress), nextTokenIdMint, address(this), address(0), lzCallParams.adapterParams);
-        }
     }
 
     // This is called by interchain mints
@@ -162,6 +152,14 @@ contract OmniNFTA is
         }
     }
 
-
     // ===================== interval Functions ===================== //
+
+    function _creditTo(
+        uint16,
+        address _toAddress,
+        uint _tokenId
+    ) internal virtual override {
+        require(_exists(_tokenId) && _ownerOf(_tokenId) == address(this));
+        _transfer(address(this), _toAddress, _tokenId);
+    }
 }

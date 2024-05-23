@@ -31,6 +31,9 @@ contract OmniNFTBase is
     BaseChainInfo public BASE_CHAIN_INFO;
     string public baseURI;
     uint256 public MINT_COST = 250000e18;
+    uint256 MAX_TOKENS_PER_MINT = 10;
+    uint256 MAX_MINTS_PER_ACCOUNT = 50;
+    uint256 COLLECTION_SIZE = 7210;
 
     // AccessControl roles.
 
@@ -100,7 +103,7 @@ contract OmniNFTBase is
     // TODO:- remove this maybe?
     receive() external payable {}
 
-    function mint() external payable virtual {}
+    function mint(uint256 mintNumber) external payable virtual {}
 
     function burn(uint256 tokenId) external payable virtual {}
 

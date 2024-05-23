@@ -12,9 +12,10 @@ import { BaseTest } from "./BaseTest.sol";
 contract testTransactions is BaseTest {
     function testNormalMintTransactionBurn() public {
         vm.startPrank(user1);
-        omniNFTA.mint();
-        vm.assertEq(omniNFTA.balanceOf(user1), 1);
+        omniNFTA.mint(2);
+        vm.assertEq(omniNFTA.balanceOf(user1), 2);
         vm.assertEq(omniNFTA.ownerOf(1), user1);
+        vm.assertEq(omniNFTA.ownerOf(2), user1);
 
         omniNFTA.safeTransferFrom(user1, user2, 1);
         vm.assertEq(omniNFTA.balanceOf(user2), 1);
@@ -33,7 +34,7 @@ contract testTransactions is BaseTest {
 
     function testInterchainTransactionBurn() public {
         vm.startPrank(user1);
-        omniNFTA.mint();
+        omniNFTA.mint(1);
         vm.assertEq(omniNFTA.balanceOf(user1), 1);
         vm.assertEq(omniNFTA.ownerOf(1), user1);
 
@@ -59,7 +60,7 @@ contract testTransactions is BaseTest {
         vm.startPrank(user1);
         uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
         uint256 mintFee = omniNFT.estimateMintFees();
-        omniNFT.mint{value: 2*mintFee, gas: 1e9}();
+        omniNFT.mint{value: 2*mintFee, gas: 1e9}(2);
         vm.assertEq(omniNFT.balanceOf(user1), 1);
         vm.assertEq(omniNFT.ownerOf(1), user1);
         vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + omniNFTA.MINT_COST());
