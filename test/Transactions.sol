@@ -34,14 +34,18 @@ contract testTransactions is BaseTest {
 
     function testInterchainTransactionBurn() public {
         vm.startPrank(user1);
-        omniNFTA.mint(1);
-        vm.assertEq(omniNFTA.balanceOf(user1), 1);
+        omniNFTA.mint(10);
+        vm.assertEq(omniNFTA.balanceOf(user1), 10);
         vm.assertEq(omniNFTA.ownerOf(1), user1);
 
+        uint256[] memory tokens = new uint256[](5);
+        for(uint256 i=0;i<5;i++){
+            tokens[i] = i+1;
+        }
         bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(omniNFTA.dstGasReserve()));
-        (uint256 nativeFee, ) = omniNFTA.estimateSendFee(secondChainId, abi.encodePacked(user2), 1, false, adapterParams);
-        omniNFTA.sendFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user2), 1, payable(user1), address(0), adapterParams);
-        vm.assertEq(omniNFT.balanceOf(user2), 1);
+        (uint256 nativeFee, ) = omniNFTA.estimateSendBatchFee(secondChainId, abi.encodePacked(user2), tokens, false, adapterParams);
+        omniNFTA.sendBatchFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user2), tokens, payable(user1), address(0), adapterParams);
+        vm.assertEq(omniNFT.balanceOf(user2), 5);
         vm.assertEq(omniNFT.ownerOf(1), user2);
         vm.stopPrank();
 
@@ -49,6 +53,7 @@ contract testTransactions is BaseTest {
         uint256 prevBalance = omnicatMock2.balanceOf(user2);
         uint256 burnFee = omniNFT.estimateBurnFees(1);
         omniNFT.burn{value: 2*burnFee}(1);
+        vm.assertEq(omniNFT.balanceOf(user2), 4);
         vm.assertEq(omniNFTA.balanceOf(user2), 0);
         vm.expectRevert("ERC721: invalid token ID");
         omniNFTA.ownerOf(1);

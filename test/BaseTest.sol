@@ -85,8 +85,10 @@ contract BaseTest is Test {
 
         omniNFTA.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omniNFT)));
         omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1e5);
+        omniNFTA.setDstChainIdToBatchLimit(secondChainId, 10);
         omniNFT.setTrustedRemoteAddress(firstChainId, abi.encodePacked(address(omniNFTA)));
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1e5);
+        omniNFT.setDstChainIdToBatchLimit(firstChainId, 10);
 
         vm.deal(address(omniNFTA), 1e20);
         vm.deal(address(omniNFT), 1e20);
