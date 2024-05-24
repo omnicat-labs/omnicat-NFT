@@ -25,6 +25,8 @@ contract OmniNFTA is
 
     // ===================== Storage ===================== //
     uint256 public nextTokenIdMint = 0;
+    mapping (address userAddress => uint256 refundAmount) public omniUserRefund;
+    mapping (uint256 tokenId => address userAddress) public NFTUserRefund;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -123,7 +125,8 @@ contract OmniNFTA is
                 lzCallParams.adapterParams
             );
             if(address(this).balance < nativeFee){
-                // TODO:- make it such that we can call a function to send the funds to the right address.
+                omniUserRefund[userAddress] += MINT_COST;
+                return;
             }
             omnicat.sendFrom{value: nativeFee}(address(this), _srcChainId, userAddressBytes, MINT_COST, lzCallParams);
         }
@@ -149,19 +152,63 @@ contract OmniNFTA is
                 }
             }
 
-            // _mint(address(this), ++nextTokenIdMint);
-
             bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
             bytes memory payload = abi.encode(abi.encodePacked(userAddress), tokens);
             payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
             (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
             if(address(this).balance < nativeFee){
-                // TODO:- make it such that we can call a function to send the funds to the right address.
+                for(uint256 i=0;i<tokens.length;){
+                    NFTUserRefund[tokens[i]] = userAddress;
+                    unchecked {
+                        i++;
+                    }
+                }
+                return;
             }
             _lzSend(_srcChainId, payload, payable(address(this)), address(0), adapterParams, nativeFee);
-            // emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokenIds);
+            emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokens);
         }
+    }
+
+    function sendOmniRefund(address userAddress, uint16 chainID) public payable onlyRole(DEFAULT_ADMIN_ROLE){
+        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
+            refundAddress: payable(address(this)),
+            zroPaymentAddress: address(0),
+            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+        });
+        bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
+        uint256 refundAmount = omniUserRefund[userAddress];
+
+        (uint256 nativeFee, ) = omnicat.estimateSendFee(
+            chainID,
+            userAddressBytes,
+            refundAmount,
+            false,
+            lzCallParams.adapterParams
+        );
+        require(address(this).balance + msg.value >= nativeFee, "send more funds");
+
+        omniUserRefund[userAddress] = 0;
+        omnicat.sendFrom{value: nativeFee}(address(this), chainID, userAddressBytes, refundAmount, lzCallParams);
+    }
+
+    function sendNFTRefund(address userAddress, uint256[] calldata tokens, uint16 chainID) public payable onlyRole(DEFAULT_ADMIN_ROLE){
+        for(uint256 i=0;i<tokens.length;){
+            require(NFTUserRefund[tokens[i]]==userAddress, "not the right user");
+            unchecked{
+                i++;
+            }
+        }
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
+        bytes memory payload = abi.encode(abi.encodePacked(userAddress), tokens);
+        payload = abi.encodePacked(MessageType.TRANSFER, payload);
+
+        (uint256 nativeFee, ) = lzEndpoint.estimateFees(chainID, address(this), payload, false, adapterParams);
+        require(address(this).balance + msg.value >= nativeFee, "send more funds");
+
+        _lzSend(chainID, payload, payable(address(this)), address(0), adapterParams, nativeFee);
+        emit SendToChain(chainID, address(this), abi.encode(userAddress), tokens);
     }
 
     // ===================== interval Functions ===================== //

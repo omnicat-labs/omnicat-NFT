@@ -86,6 +86,47 @@ contract testTransactions is BaseTest {
         omniNFTA.ownerOf(1);
         vm.assertEq(omnicatMock1.balanceOf(user2), prevBalance + omniNFT.MINT_COST());
         vm.stopPrank();
+    }
 
+    function testRefunds() public {
+        vm.deal(address(omniNFTA), 0);
+
+        vm.startPrank(user1);
+        uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
+        uint256 mintFee = omniNFT.estimateMintFees();
+        omniNFT.mint{value: 2*mintFee, gas: 1e9}(10);
+        vm.assertEq(omniNFT.balanceOf(user1), 0);
+        vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + 10*omniNFTA.MINT_COST());
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        vm.deal(address(omniNFTA), 1e20);
+        uint256[] memory tokens = new uint256[](10);
+        for(uint256 i=0;i<10;i++){
+            tokens[i] = i+1;
+        }
+        omniNFTA.sendNFTRefund(user1, tokens, secondChainId);
+        vm.assertEq(omniNFT.balanceOf(user1), 10);
+        vm.assertEq(omniNFT.ownerOf(1), user1);
+        vm.assertEq(omniNFT.ownerOf(2), user1);
+        vm.stopPrank();
+
+        vm.deal(address(omniNFTA), 0);
+        vm.startPrank(user1);
+        prevBalance = omnicatMock2.balanceOf(user1);
+        uint256 burnFee = omniNFT.estimateBurnFees(1);
+        omniNFT.burn{value: 2*burnFee}(1);
+        vm.assertEq(omniNFT.balanceOf(user1), 9);
+        vm.assertEq(omniNFTA.balanceOf(user1), 0);
+        vm.expectRevert("ERC721: invalid token ID");
+        omniNFTA.ownerOf(1);
+        vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        vm.deal(address(omniNFTA), 1e20);
+        omniNFTA.sendOmniRefund(user1, secondChainId);
+        vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + omniNFT.MINT_COST());
+        vm.stopPrank();
     }
 }
