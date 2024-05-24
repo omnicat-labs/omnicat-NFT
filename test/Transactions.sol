@@ -105,7 +105,9 @@ contract testTransactions is BaseTest {
         for(uint256 i=0;i<10;i++){
             tokens[i] = i+1;
         }
-        omniNFTA.sendNFTRefund(user1, tokens, secondChainId);
+        bytes memory payload = abi.encode(abi.encodePacked(user1), tokens);
+        payload = abi.encodePacked(MessageType.TRANSFER, payload);
+        omniNFTA.sendNFTRefund(keccak256(payload));
         vm.assertEq(omniNFT.balanceOf(user1), 10);
         vm.assertEq(omniNFT.ownerOf(1), user1);
         vm.assertEq(omniNFT.ownerOf(2), user1);

@@ -16,6 +16,12 @@ contract OmniNFTA is
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
 
+    struct NFTRefund {
+        address userAddress;
+        uint16 chainID;
+        uint256[] tokens;
+    }
+
     // ===================== Constants ===================== //
     uint256 public totalTokens = 100;
 
@@ -26,7 +32,7 @@ contract OmniNFTA is
     // ===================== Storage ===================== //
     uint256 public nextTokenIdMint = 0;
     mapping (address userAddress => uint256 refundAmount) public omniUserRefund;
-    mapping (uint256 tokenId => address userAddress) public NFTUserRefund;
+    mapping (bytes32 hashedPayload => NFTRefund userRefund) public NFTUserRefund;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -158,12 +164,8 @@ contract OmniNFTA is
 
             (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
             if(address(this).balance < nativeFee){
-                for(uint256 i=0;i<tokens.length;){
-                    NFTUserRefund[tokens[i]] = userAddress;
-                    unchecked {
-                        i++;
-                    }
-                }
+                bytes32 hashedPayload = keccak256(payload);
+                NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, tokens);
                 return;
             }
             _lzSend(_srcChainId, payload, payable(address(this)), address(0), adapterParams, nativeFee);
@@ -193,22 +195,17 @@ contract OmniNFTA is
         omnicat.sendFrom{value: nativeFee}(address(this), chainID, userAddressBytes, refundAmount, lzCallParams);
     }
 
-    function sendNFTRefund(address userAddress, uint256[] calldata tokens, uint16 chainID) public payable onlyRole(DEFAULT_ADMIN_ROLE){
-        for(uint256 i=0;i<tokens.length;){
-            require(NFTUserRefund[tokens[i]]==userAddress, "not the right user");
-            unchecked{
-                i++;
-            }
-        }
+    function sendNFTRefund(bytes32 hashedPayload) public payable {
+        NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
         bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
-        bytes memory payload = abi.encode(abi.encodePacked(userAddress), tokens);
+        bytes memory payload = abi.encode(abi.encodePacked(refundObject.userAddress), refundObject.tokens);
         payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
-        (uint256 nativeFee, ) = lzEndpoint.estimateFees(chainID, address(this), payload, false, adapterParams);
+        (uint256 nativeFee, ) = lzEndpoint.estimateFees(refundObject.chainID, address(this), payload, false, adapterParams);
         require(address(this).balance + msg.value >= nativeFee, "send more funds");
 
-        _lzSend(chainID, payload, payable(address(this)), address(0), adapterParams, nativeFee);
-        emit SendToChain(chainID, address(this), abi.encode(userAddress), tokens);
+        _lzSend(refundObject.chainID, payload, payable(address(this)), address(0), adapterParams, nativeFee);
+        emit SendToChain(refundObject.chainID, address(this), abi.encode(refundObject.userAddress), refundObject.tokens);
     }
 
     // ===================== interval Functions ===================== //
