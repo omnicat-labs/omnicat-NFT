@@ -31,7 +31,7 @@ contract OmniNFTA is
 
     // ===================== Storage ===================== //
     uint256 public nextTokenIdMint = 0;
-    mapping (address userAddress => uint256 refundAmount) public omniUserRefund;
+    mapping (address userAddress => mapping(uint16 chainId => uint256 refundAmount)) public omniUserRefund;
     mapping (bytes32 hashedPayload => NFTRefund userRefund) public NFTUserRefund;
 
     // ===================== Constructor ===================== //
@@ -131,7 +131,7 @@ contract OmniNFTA is
                 lzCallParams.adapterParams
             );
             if(address(this).balance < nativeFee){
-                omniUserRefund[userAddress] += MINT_COST;
+                omniUserRefund[userAddress][_srcChainId] += MINT_COST;
                 return;
             }
             omnicat.sendFrom{value: nativeFee}(address(this), _srcChainId, userAddressBytes, MINT_COST, lzCallParams);
@@ -173,14 +173,15 @@ contract OmniNFTA is
         }
     }
 
-    function sendOmniRefund(address userAddress, uint16 chainID) public payable onlyRole(DEFAULT_ADMIN_ROLE){
+    function sendOmniRefund(address userAddress, uint16 chainID) public payable {
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(address(this)),
             zroPaymentAddress: address(0),
             adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
         });
         bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
-        uint256 refundAmount = omniUserRefund[userAddress];
+        uint256 refundAmount = omniUserRefund[userAddress][chainID];
+        require(refundAmount > 0, "no funds to send");
 
         (uint256 nativeFee, ) = omnicat.estimateSendFee(
             chainID,
@@ -191,7 +192,7 @@ contract OmniNFTA is
         );
         require(address(this).balance + msg.value >= nativeFee, "send more funds");
 
-        omniUserRefund[userAddress] = 0;
+        omniUserRefund[userAddress][chainID] = 0;
         omnicat.sendFrom{value: nativeFee}(address(this), chainID, userAddressBytes, refundAmount, lzCallParams);
     }
 
