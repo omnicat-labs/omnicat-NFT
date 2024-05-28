@@ -12,13 +12,14 @@ import { BaseTest } from "./BaseTest.sol";
 contract testTransactions is BaseTest {
     function testNormalMintTransactionBurn() public {
         vm.startPrank(user1);
-        omniNFTA.mint(2);
-        vm.assertEq(omniNFTA.balanceOf(user1), 2);
+        omniNFTA.mint(10);
+        vm.assertEq(omniNFTA.balanceOf(user1), 10);
         vm.assertEq(omniNFTA.ownerOf(1), user1);
         vm.assertEq(omniNFTA.ownerOf(2), user1);
 
         omniNFTA.safeTransferFrom(user1, user2, 1);
         vm.assertEq(omniNFTA.balanceOf(user2), 1);
+        vm.assertEq(omniNFTA.balanceOf(user1), 9);
         vm.assertEq(omniNFTA.ownerOf(1), user2);
         vm.stopPrank();
 
@@ -130,5 +131,49 @@ contract testTransactions is BaseTest {
         omniNFTA.sendOmniRefund(user1, secondChainId);
         vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + omniNFT.MINT_COST());
         vm.stopPrank();
+    }
+
+    function testMoreRefunds() public {
+        // Mint a few nfts and try to burn one
+        vm.startPrank(user1);
+        uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
+        uint256 mintFee = omniNFT.estimateMintFees();
+        omniNFT.mint{value: 2*mintFee, gas: 1e9}(5);
+        vm.assertEq(omniNFT.balanceOf(user1), 5);
+        vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + 5*omniNFTA.MINT_COST());
+        uint256 burnFee = omniNFT.estimateBurnFees(1);
+        omniNFT.burn{value: 2*burnFee}(1);
+        vm.assertEq(omniNFT.balanceOf(user1), 4);
+        vm.stopPrank();
+
+        // Since burning is not allowed yet because the full collection is not minted, the admin can give the use their
+        // NFT back
+        vm.startPrank(admin);
+        uint256[] memory tokens = new uint256[](1);
+        tokens[0] = 1;
+        bytes memory payload = abi.encode(abi.encodePacked(user1), tokens);
+        payload = abi.encodePacked(MessageType.TRANSFER, payload);
+        omniNFTA.sendNFTRefund(keccak256(payload));
+        vm.assertEq(omniNFT.balanceOf(user1), 5);
+        vm.stopPrank();
+
+        // Try to mint more nfts after mint
+        vm.startPrank(user1);
+        omniNFTA.mint(5);
+        prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
+        mintFee = omniNFT.estimateMintFees();
+        omniNFT.mint{value: 2*mintFee, gas: 1e9}(10);
+        vm.assertEq(omniNFT.balanceOf(user1), 5);
+        vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + 10*omniNFTA.MINT_COST());
+        vm.stopPrank();
+
+        // Since minting is not allowed, user should be able to get omni refund
+        vm.startPrank(admin);
+        prevBalance = omnicatMock2.balanceOf(address(user1));
+        vm.deal(address(omniNFTA), 1e20);
+        omniNFTA.sendOmniRefund(user1, secondChainId);
+        vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + 10*omniNFT.MINT_COST());
+        vm.stopPrank();
+
     }
 }

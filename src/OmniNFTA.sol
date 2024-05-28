@@ -5,7 +5,7 @@ import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import { IOFTReceiverV2 } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/IOFTReceiverV2.sol";
-import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
+import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -38,13 +38,11 @@ contract OmniNFTA is
     constructor(
         BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
-        string memory _name,
-        string memory _symbol,
+        NftInfo memory _nftInfo,
         uint _minGasToTransfer,
-        address _lzEndpoint,
-        string memory _baseURI
+        address _lzEndpoint
     )
-        OmniNFTBase(_baseChainInfo, _omnicat, _name, _symbol, _minGasToTransfer, _lzEndpoint, _baseURI)
+        OmniNFTBase(_baseChainInfo, _omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
     {}
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -73,6 +71,7 @@ contract OmniNFTA is
     // TODO:- This is not an interchain transaction. burns a token from the user, and credits omni to the user.
     function burn(uint256 tokenId) external override payable nonReentrant() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
+        require(nextTokenIdMint >= COLLECTION_SIZE, "mint not completed yet");
         _burn(tokenId);
         omnicat.transfer(msg.sender, MINT_COST);
     }
@@ -116,6 +115,14 @@ contract OmniNFTA is
                 // TODO:- see if this is ever possible
                 return;
             }
+            if(nextTokenIdMint < COLLECTION_SIZE){
+                // If minting not allowed, store a NFT refund for the user.
+                bytes memory payload = abi.encode(abi.encodePacked(userAddress), _toSingletonArray(tokenId));
+                payload = abi.encodePacked(MessageType.TRANSFER, payload);
+                bytes32 hashedPayload = keccak256(payload);
+                NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, _toSingletonArray(tokenId));
+                return;
+            }
             _burn(tokenId);
             ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
                 refundAddress: payable(address(this)),
@@ -145,8 +152,9 @@ contract OmniNFTA is
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){
             (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
-            if(_amount < mintNumber*MINT_COST){
+            if(_amount < mintNumber*MINT_COST || mintNumber > MAX_TOKENS_PER_MINT || nextTokenIdMint + mintNumber > COLLECTION_SIZE ){
                 // create refund for user
+                omniUserRefund[userAddress][_srcChainId] += mintNumber*MINT_COST;
                 return;
             }
             uint256[] memory tokens = new uint256[](mintNumber);

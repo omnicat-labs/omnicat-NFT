@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
-import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
+import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -26,13 +26,11 @@ contract OmniNFT is
     constructor(
         BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
-        string memory _name,
-        string memory _symbol,
+        NftInfo memory _nftInfo,
         uint _minGasToTransfer,
-        address _lzEndpoint,
-        string memory _baseURI
+        address _lzEndpoint
     )
-        OmniNFTBase(_baseChainInfo, _omnicat, _name, _symbol, _minGasToTransfer, _lzEndpoint, _baseURI)
+        OmniNFTBase(_baseChainInfo, _omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
     {
         // setTrustedRemoteAddress(_baseChainInfo.BASE_CHAIN_ID, abi.encodePacked(_baseChainInfo.BASE_CHAIN_ADDRESS));
         // setMinDstGas(_baseChainInfo.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _minGasToTransfer);
@@ -72,6 +70,7 @@ contract OmniNFT is
     // TODO:- this is only an interchain function, that will call mint on OmniNFTA
     function mint(uint256 mintNumber) external payable override nonReentrant() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
+        require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT);
         bytes memory payload = abi.encode(msg.sender, mintNumber);
         payload = abi.encodePacked(MessageType.MINT, payload);
 

@@ -6,6 +6,16 @@ struct BaseChainInfo {
     address BASE_CHAIN_ADDRESS;
 }
 
+struct NftInfo {
+    string baseURI;
+    uint256 MINT_COST;
+    uint256 MAX_TOKENS_PER_MINT;
+    uint256 MAX_MINTS_PER_ACCOUNT;
+    uint256 COLLECTION_SIZE;
+    string name;
+    string symbol;
+}
+
 enum MessageType {
     MINT,
     BURN,

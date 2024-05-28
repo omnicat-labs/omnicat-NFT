@@ -13,7 +13,7 @@ import { IAccessControlEnumerable } from "@openzeppelin/contracts/access/IAccess
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { BaseChainInfo, MessageType } from "./utils/OmniNftStructs.sol";
+import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 
 import { AccessControlAdminProtection } from "./utils/AccessControlAdminProtection.sol";
 
@@ -31,9 +31,9 @@ contract OmniNFTBase is
     BaseChainInfo public BASE_CHAIN_INFO;
     string public baseURI;
     uint256 public MINT_COST = 250000e18;
-    uint256 MAX_TOKENS_PER_MINT = 10;
-    uint256 MAX_MINTS_PER_ACCOUNT = 50;
-    uint256 COLLECTION_SIZE = 7210;
+    uint256 public MAX_TOKENS_PER_MINT = 10;
+    uint256 public MAX_MINTS_PER_ACCOUNT = 50;
+    uint256 public COLLECTION_SIZE = 7210;
 
     // AccessControl roles.
 
@@ -46,19 +46,21 @@ contract OmniNFTBase is
     constructor(
         BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
-        string memory _name,
-        string memory _symbol,
+        NftInfo memory _nftInfo,
         uint _minGasToTransfer,
-        address _lzEndpoint,
-        string memory _baseURIstring
+        address _lzEndpoint
     )
-        ONFT721(_name, _symbol, _minGasToTransfer, _lzEndpoint)
+        ONFT721(_nftInfo.name, _nftInfo.symbol, _minGasToTransfer, _lzEndpoint)
     {
         // Grant admin role.
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         BASE_CHAIN_INFO = _baseChainInfo;
         omnicat = _omnicat;
-        baseURI = _baseURIstring;
+        baseURI = _nftInfo.baseURI;
+        MINT_COST = _nftInfo.MINT_COST;
+        MAX_TOKENS_PER_MINT = _nftInfo.MAX_TOKENS_PER_MINT;
+        MAX_MINTS_PER_ACCOUNT = _nftInfo.MAX_MINTS_PER_ACCOUNT;
+        COLLECTION_SIZE = _nftInfo.COLLECTION_SIZE;
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //

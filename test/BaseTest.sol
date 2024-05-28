@@ -5,7 +5,7 @@ import { OmniNFT } from "../src/OmniNFT.sol";
 import { OmniNFTA } from "../src/OmniNFTA.sol";
 import { LZEndpointMock } from "@LayerZero-Examples/contracts/lzApp/mocks/LZEndpointMock.sol";
 import { OmniCatMock } from "../src/mocks/OmniCatMock.sol";
-import { BaseChainInfo, MessageType } from "../src/utils/OmniNftStructs.sol";
+import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 contract BaseTest is Test {
@@ -63,11 +63,17 @@ contract BaseTest is Test {
                 BASE_CHAIN_ADDRESS: address(0)
             }),
             omnicatMock1,
-            "omniNFT",
-            "onft",
+            NftInfo({
+                baseURI: "http://omni.xyz",
+                MINT_COST: 250000e18,
+                MAX_TOKENS_PER_MINT: 10,
+                MAX_MINTS_PER_ACCOUNT: 50,
+                COLLECTION_SIZE: 10,
+                name: "omniNFT",
+                symbol: "onft"
+            }),
             1e4,
-            address(layerZeroEndpointMock1),
-            "http://omni.xyz"
+            address(layerZeroEndpointMock1)
         );
         BaseChainInfo memory baseChainInfo = BaseChainInfo({
             BASE_CHAIN_ID: firstChainId,
@@ -76,11 +82,17 @@ contract BaseTest is Test {
         omniNFT = new OmniNFT(
             baseChainInfo,
             omnicatMock2,
-            "omniNFT",
-            "onft",
+            NftInfo({
+                baseURI: "http://omni.xyz",
+                MINT_COST: 250000e18,
+                MAX_TOKENS_PER_MINT: 10,
+                MAX_MINTS_PER_ACCOUNT: 50,
+                COLLECTION_SIZE: 10,
+                name: "omniNFT",
+                symbol: "onft"
+            }),
             1e4,
-            address(layerZeroEndpointMock2),
-            "http://omni.xyz"
+            address(layerZeroEndpointMock2)
         );
 
         omniNFTA.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omniNFT)));
