@@ -15,6 +15,7 @@ contract OmniNFT is
     using SafeCast for uint256;
 
     // ===================== Constants ===================== //
+    BaseChainInfo public BASE_CHAIN_INFO;
 
     // AccessControl roles.
 
@@ -30,10 +31,9 @@ contract OmniNFT is
         uint _minGasToTransfer,
         address _lzEndpoint
     )
-        OmniNFTBase(_baseChainInfo, _omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
+        OmniNFTBase(_omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
     {
-        // setTrustedRemoteAddress(_baseChainInfo.BASE_CHAIN_ID, abi.encodePacked(_baseChainInfo.BASE_CHAIN_ADDRESS));
-        // setMinDstGas(_baseChainInfo.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _minGasToTransfer);
+        BASE_CHAIN_INFO = _baseChainInfo;
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -67,7 +67,6 @@ contract OmniNFT is
         return nativeFee + omniFee;
     }
 
-    // TODO:- this is only an interchain function, that will call mint on OmniNFTA
     function mint(uint256 mintNumber) external payable override nonReentrant() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT);
@@ -139,7 +138,6 @@ contract OmniNFT is
         );
     }
 
-    // TODO:- override this to accept only transactions.
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -154,7 +152,6 @@ contract OmniNFT is
         uint8 value = uint8(_payload[0]);
         MessageType messageType = MessageType(value);
         if(messageType != MessageType.TRANSFER){
-            // TODO:- see if you should revert this or just return?
             return;
         }
 

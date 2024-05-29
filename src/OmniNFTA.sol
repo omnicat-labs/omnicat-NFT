@@ -23,7 +23,6 @@ contract OmniNFTA is
     }
 
     // ===================== Constants ===================== //
-    uint256 public totalTokens = 100;
 
     // AccessControl roles.
 
@@ -36,13 +35,12 @@ contract OmniNFTA is
 
     // ===================== Constructor ===================== //
     constructor(
-        BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
         NftInfo memory _nftInfo,
         uint _minGasToTransfer,
         address _lzEndpoint
     )
-        OmniNFTBase(_baseChainInfo, _omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
+        OmniNFTBase(_omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
     {}
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -52,7 +50,6 @@ contract OmniNFTA is
 
     // ===================== Public Functions ===================== //
 
-    // TODO:- This is not an interchain transaction. mints a token for the user.
     function mint(uint256 mintNumber) external override payable nonReentrant() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
@@ -68,7 +65,6 @@ contract OmniNFTA is
         }
     }
 
-    // TODO:- This is not an interchain transaction. burns a token from the user, and credits omni to the user.
     function burn(uint256 tokenId) external override payable nonReentrant() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
         require(nextTokenIdMint >= COLLECTION_SIZE, "mint not completed yet");
@@ -76,7 +72,6 @@ contract OmniNFTA is
         omnicat.transfer(msg.sender, MINT_COST);
     }
 
-    // TODO:- override this to accept burns and mints and transactions.
     function _nonblockingLzReceive(
         uint16 _srcChainId,
         bytes memory _srcAddress,
@@ -112,7 +107,6 @@ contract OmniNFTA is
         else if(messageType == MessageType.BURN){
             (address userAddress, uint256 tokenId) = abi.decode(payloadWithoutMessage, (address, uint256));
             if(_ownerOf(tokenId)!=address(this)){
-                // TODO:- see if this is ever possible
                 return;
             }
             if(nextTokenIdMint < COLLECTION_SIZE){

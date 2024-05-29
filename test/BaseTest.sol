@@ -58,10 +58,6 @@ contract BaseTest is Test {
         omnicatMock2.transfer(user4, 100e25);
 
         omniNFTA = new OmniNFTA(
-            BaseChainInfo({
-                BASE_CHAIN_ID: uint16(0),
-                BASE_CHAIN_ADDRESS: address(0)
-            }),
             omnicatMock1,
             NftInfo({
                 baseURI: "http://omni.xyz",

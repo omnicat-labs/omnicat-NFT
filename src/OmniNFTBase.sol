@@ -28,7 +28,6 @@ contract OmniNFTBase is
 
     // ===================== Constants ===================== //
     uint64 public dstGasReserve = 1e6;
-    BaseChainInfo public BASE_CHAIN_INFO;
     string public baseURI;
     uint256 public MINT_COST = 250000e18;
     uint256 public MAX_TOKENS_PER_MINT = 10;
@@ -44,7 +43,6 @@ contract OmniNFTBase is
 
     // ===================== Constructor ===================== //
     constructor(
-        BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
         NftInfo memory _nftInfo,
         uint _minGasToTransfer,
@@ -54,7 +52,6 @@ contract OmniNFTBase is
     {
         // Grant admin role.
         _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
-        BASE_CHAIN_INFO = _baseChainInfo;
         omnicat = _omnicat;
         baseURI = _nftInfo.baseURI;
         MINT_COST = _nftInfo.MINT_COST;
