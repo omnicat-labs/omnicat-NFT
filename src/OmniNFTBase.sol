@@ -8,19 +8,16 @@ import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { AccessControlEnumerable } from "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import { IAccessControlEnumerable } from "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 
-import { AccessControlAdminProtection } from "./utils/AccessControlAdminProtection.sol";
 
 contract OmniNFTBase is
     ReentrancyGuard,
     Pausable,
-    AccessControlAdminProtection,
     ONFT721
 {
     using SafeERC20 for IOmniCat;
@@ -51,7 +48,6 @@ contract OmniNFTBase is
         ONFT721(_nftInfo.name, _nftInfo.symbol, _minGasToTransfer, _lzEndpoint)
     {
         // Grant admin role.
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         omnicat = _omnicat;
         baseURI = _nftInfo.baseURI;
         MINT_COST = _nftInfo.MINT_COST;
@@ -65,7 +61,7 @@ contract OmniNFTBase is
     function pauseContract()
         external
         nonReentrant
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyOwner()
     {
         _pause();
     }
@@ -73,17 +69,17 @@ contract OmniNFTBase is
     function unpauseContract()
         external
         nonReentrant
-        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyOwner()
     {
         _unpause();
     }
 
-    function setDstGasReserve(uint64 _dstGasReserve) whenNotPaused onlyRole(DEFAULT_ADMIN_ROLE) external {
+    function setDstGasReserve(uint64 _dstGasReserve) whenNotPaused onlyOwner() external {
         dstGasReserve = _dstGasReserve;
     }
 
     // TODO:- remove this function?
-    function extractNative(uint256 amount) onlyRole(DEFAULT_ADMIN_ROLE) external {
+    function extractNative(uint256 amount) onlyOwner() external {
         if(amount == 0){
             amount = address(this).balance;
         }
@@ -95,7 +91,7 @@ contract OmniNFTBase is
 
     // ===================== Public Functions ===================== //
 
-    function supportsInterface(bytes4 interfaceId) public view virtual override(AccessControlEnumerable, ONFT721) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ONFT721) returns (bool) {
         return interfaceId == type(IAccessControlEnumerable).interfaceId || interfaceId == type(IONFT721).interfaceId || super.supportsInterface(interfaceId);
     }
 
