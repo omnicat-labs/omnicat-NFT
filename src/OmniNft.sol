@@ -67,7 +67,7 @@ contract OmniNFT is
         return nativeFee + omniFee;
     }
 
-    function mint(uint256 mintNumber) external payable override nonReentrant() {
+    function mint(uint256 mintNumber) external payable nonReentrant() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT);
         bytes memory payload = abi.encode(msg.sender, mintNumber);
@@ -111,7 +111,7 @@ contract OmniNFT is
         return omniSendFee + nativeFee;
     }
 
-    function burn(uint256 tokenId) external payable override nonReentrant() {
+    function burn(uint256 tokenId) external payable nonReentrant() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
         _burn(tokenId);
         bytes memory payload = abi.encode(msg.sender, tokenId);

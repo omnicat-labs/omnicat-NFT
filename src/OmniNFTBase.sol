@@ -8,7 +8,6 @@ import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IAccessControlEnumerable } from "@openzeppelin/contracts/access/IAccessControlEnumerable.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -78,7 +77,6 @@ contract OmniNFTBase is
         dstGasReserve = _dstGasReserve;
     }
 
-    // TODO:- remove this function?
     function extractNative(uint256 amount) onlyOwner() external {
         if(amount == 0){
             amount = address(this).balance;
@@ -92,17 +90,11 @@ contract OmniNFTBase is
     // ===================== Public Functions ===================== //
 
     function supportsInterface(bytes4 interfaceId) public view virtual override(ONFT721) returns (bool) {
-        return interfaceId == type(IAccessControlEnumerable).interfaceId || interfaceId == type(IONFT721).interfaceId || super.supportsInterface(interfaceId);
+        return interfaceId == type(IONFT721).interfaceId || super.supportsInterface(interfaceId);
     }
 
-    // TODO:- remove this maybe?
     receive() external payable {}
 
-    function mint(uint256 mintNumber) external payable virtual {}
-
-    function burn(uint256 tokenId) external payable virtual {}
-
-    // TODO:- make this send have the payload with MessageType.TRANSFER
     function _send(
         address _from,
         uint16 _dstChainId,

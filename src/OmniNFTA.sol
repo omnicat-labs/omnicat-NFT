@@ -50,11 +50,10 @@ contract OmniNFTA is
 
     // ===================== Public Functions ===================== //
 
-    function mint(uint256 mintNumber) external override payable nonReentrant() {
+    function mint(uint256 mintNumber) external nonReentrant() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
         require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
-        require(msg.value == 0, "do not send funds here");
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
         for(uint256 i=0;i<mintNumber;){
@@ -65,7 +64,7 @@ contract OmniNFTA is
         }
     }
 
-    function burn(uint256 tokenId) external override payable nonReentrant() {
+    function burn(uint256 tokenId) external nonReentrant() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
         require(nextTokenIdMint >= COLLECTION_SIZE, "mint not completed yet");
         _burn(tokenId);
