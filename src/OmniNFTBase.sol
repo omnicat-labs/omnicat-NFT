@@ -124,34 +124,4 @@ contract OmniNFTBase is
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
     }
-
-    /**
-     * @dev Private function to handle token transfers using IOFTV2 interface.
-     * @param from Address sending the tokens.
-     * @param to Address receiving the tokens.
-     * @param amount Amount of tokens to transfer.
-     */
-    function _transferTokens(address from, address to, uint256 amount, uint16 _dstChainId) private {
-        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
-            refundAddress: payable(from),
-            zroPaymentAddress: address(0),
-            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
-        });
-
-        (uint256 fee, )  = omnicat.estimateSendFee(
-            _dstChainId,
-            bytes32(abi.encode(to)),
-            amount,
-            false,
-            abi.encodePacked(uint16(1), uint256(dstGasReserve))
-        );
-
-        omnicat.sendFrom{value: fee}(
-            from,
-            _dstChainId,
-            bytes32(abi.encode(to)),
-            amount,
-            lzCallParams
-        );
-    }
 }
