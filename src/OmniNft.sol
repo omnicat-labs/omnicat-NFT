@@ -54,8 +54,8 @@ contract OmniNFT is
         });
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
-        (uint256 nativeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
-        (uint256 omniFee, ) = omnicat.estimateSendAndCallFee(
+        (uint256 nftBridgeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
+        (uint256 omniBridgeFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             baseChainAddressBytes,
             MINT_COST,
@@ -64,7 +64,7 @@ contract OmniNFT is
             false,
             lzCallParams.adapterParams
         );
-        return nativeFee + omniFee;
+        return nftBridgeFee + omniBridgeFee;
     }
 
     function mint(uint256 mintNumber) external payable nonReentrant() {
@@ -80,8 +80,8 @@ contract OmniNFT is
         });
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
-        (uint256 nativeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
-        (uint256 omniFee, ) = omnicat.estimateSendAndCallFee(
+        (uint256 nftBridgeFee, ) = estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, abi.encodePacked(msg.sender), 1, false, lzCallParams.adapterParams);
+        (uint256 omniBridgeFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             baseChainAddressBytes,
             mintNumber*MINT_COST,
@@ -90,8 +90,9 @@ contract OmniNFT is
             false,
             lzCallParams.adapterParams
         );
-        require(msg.value >= (nativeFee + omniFee), "not enough fees");
-        omnicat.sendAndCall{value: omniFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, dstGasReserve, lzCallParams);
+        interchainTransactionFees += nftBridgeFee;
+        require(msg.value >= (nftBridgeFee + omniBridgeFee), "not enough fees");
+        omnicat.sendAndCall{value: omniBridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, dstGasReserve, lzCallParams);
     }
 
     function estimateBurnFees(uint256 tokenId) external view returns (uint256) {
@@ -105,10 +106,10 @@ contract OmniNFT is
         });
         bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
-        (uint256 omniSendFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
-        (uint256 nativeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
+        (uint256 omniBridgeFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
+        (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
 
-        return omniSendFee + nativeFee;
+        return omniBridgeFee + nftBridgeFee;
     }
 
     function burn(uint256 tokenId) external payable nonReentrant() {
@@ -124,17 +125,18 @@ contract OmniNFT is
         });
         bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
-        (uint256 omniSendFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
-        (uint256 nativeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
+        (uint256 omniBridgeFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
+        (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
+        interchainTransactionFees += omniBridgeFee;
 
-        require(msg.value >= (omniSendFee + nativeFee), "not enough to cover fees");
+        require(msg.value >= (omniBridgeFee + nftBridgeFee), "not enough to cover fees");
         _lzSend(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             payload,
             payable(msg.sender),
             address(0),
             lzCallParams.adapterParams,
-            nativeFee
+            nftBridgeFee
         );
     }
 

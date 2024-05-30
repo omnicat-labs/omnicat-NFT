@@ -9,14 +9,12 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 
 
 contract OmniNFTBase is
     ReentrancyGuard,
-    Pausable,
     ONFT721
 {
     using SafeERC20 for IOmniCat;
@@ -25,10 +23,10 @@ contract OmniNFTBase is
     // ===================== Constants ===================== //
     uint64 public dstGasReserve = 1e6;
     string public baseURI;
-    uint256 public MINT_COST = 250000e18;
-    uint256 public MAX_TOKENS_PER_MINT = 10;
-    uint256 public MAX_MINTS_PER_ACCOUNT = 50;
-    uint256 public COLLECTION_SIZE = 7210;
+    uint256 public immutable MINT_COST;
+    uint256 public immutable MAX_TOKENS_PER_MINT;
+    uint256 public immutable MAX_MINTS_PER_ACCOUNT;
+    uint256 public immutable COLLECTION_SIZE;
 
     // AccessControl roles.
 
@@ -36,6 +34,7 @@ contract OmniNFTBase is
     IOmniCat public omnicat;
 
     // ===================== Storage ===================== //
+    uint256 interchainTransactionFees = 0;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -57,34 +56,23 @@ contract OmniNFTBase is
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
 
-    function pauseContract()
-        external
-        nonReentrant
-        onlyOwner()
-    {
-        _pause();
-    }
-
-    function unpauseContract()
-        external
-        nonReentrant
-        onlyOwner()
-    {
-        _unpause();
-    }
-
-    function setDstGasReserve(uint64 _dstGasReserve) whenNotPaused onlyOwner() external {
+    function setDstGasReserve(uint64 _dstGasReserve) onlyOwner() external {
         dstGasReserve = _dstGasReserve;
     }
 
-    function extractNative(uint256 amount) onlyOwner() external {
-        if(amount == 0){
-            amount = address(this).balance;
-        }
-        payable(_msgSender()).transfer(amount);
+    function setBaseUri(string calldata _newBaseURI) onlyOwner() external {
+        baseURI = _newBaseURI;
     }
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
+
+    function extractNative(uint256 amount) onlyOwner() external {
+        if(amount == 0){
+            amount = interchainTransactionFees;
+        }
+        require(amount <= interchainTransactionFees, "cannot take that much");
+        payable(msg.sender).transfer(amount);
+    }
 
 
     // ===================== Public Functions ===================== //
