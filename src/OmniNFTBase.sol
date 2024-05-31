@@ -35,6 +35,7 @@ contract OmniNFTBase is
 
     // ===================== Storage ===================== //
     uint256 interchainTransactionFees = 0;
+    bool revealed = false;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -60,8 +61,9 @@ contract OmniNFTBase is
         dstGasReserve = _dstGasReserve;
     }
 
-    function setBaseUri(string calldata _newBaseURI) onlyOwner() external {
+    function setBaseUri(string calldata _newBaseURI, bool _revealed) onlyOwner() external {
         baseURI = _newBaseURI;
+        revealed = _revealed;
     }
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
@@ -76,10 +78,6 @@ contract OmniNFTBase is
 
 
     // ===================== Public Functions ===================== //
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ONFT721) returns (bool) {
-        return interfaceId == type(IONFT721).interfaceId || super.supportsInterface(interfaceId);
-    }
 
     receive() external payable {}
 
@@ -106,6 +104,15 @@ contract OmniNFTBase is
         _checkGasLimit(_dstChainId, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[_dstChainId] * _tokenIds.length);
         _lzSend(_dstChainId, payload, _refundAddress, _zroPaymentAddress, _adapterParams, msg.value);
         emit SendToChain(_dstChainId, _from, _toAddress, _tokenIds);
+    }
+
+    function tokenURI(uint256 tokenId) public view override returns (string memory) {
+        if(!revealed){
+            return baseURI;
+        }
+        else{
+            super.tokenURI(tokenId);
+        }
     }
 
     // ===================== interval Functions ===================== //
