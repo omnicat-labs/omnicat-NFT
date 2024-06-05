@@ -4,11 +4,10 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 
 import { OmniNFT } from "../src/OmniNFT.sol";
-import { ILayerZeroEndpoint } from "@LayerZero/contracts/interfaces/ILayerZeroEndpoint.sol";
 import { IOmniCat } from "../src/interfaces/IOmniCat.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 
-contract DeployPredictionPool is Script {
+contract DeployOmniNFT is Script {
 
     function run() external {
 
@@ -19,10 +18,10 @@ contract DeployPredictionPool is Script {
         uint256 MAX_TOKENS_PER_MINT = vm.envUint("MAX_TOKENS_PER_MINT");
         uint256 MAX_MINTS_PER_ACCOUNT = vm.envUint("MAX_MINTS_PER_ACCOUNT");
         uint256 MINT_COST = vm.envUint("MINT_COST");
-        ILayerZeroEndpoint layerZeroEndpoint = ILayerZeroEndpoint(vm.envAddress("LAYER_ZERO_ENDPOINT"));
+        address layerZeroEndpoint = vm.envAddress("LAYER_ZERO_ENDPOINT");
         IOmniCat omnicat = IOmniCat(vm.envAddress("OMNICAT_ADDRESS"));
         address omniNFTA = vm.envAddress("OMNI_NFT_A");
-        uint256 baseChainId = vm.envUint("BASE_CHAIN_ID");
+        uint16 baseChainId = uint16(vm.envUint("BASE_CHAIN_ID"));
 
 
         // uint256 FEE_PERCENTAGE = 10;
@@ -30,7 +29,7 @@ contract DeployPredictionPool is Script {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        OmniNFT OmniNFT = new OmniNFT(
+        OmniNFT omniNFT = new OmniNFT(
             BaseChainInfo({
                 BASE_CHAIN_ID: baseChainId,
                 BASE_CHAIN_ADDRESS: address(omniNFTA)
@@ -50,11 +49,11 @@ contract DeployPredictionPool is Script {
         );
 
         // THIS NEEDS TO BE CALLED EVENTUALLY
-        // OmniNFT.setTrustedRemoteAddress(_remoteChainId, _remoteAddress);
+        omniNFT.setTrustedRemoteAddress(baseChainId, abi.encodePacked(omniNFTA));
 
 
 
-        payable(address(OmniNFT)).transfer(0.02 ether);
+        // payable(address(OmniNFT)).transfer(0.01 ether);
 
         vm.stopBroadcast();
     }

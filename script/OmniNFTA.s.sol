@@ -4,11 +4,10 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 
 import { OmniNFTA } from "../src/OmniNFTA.sol";
-import { ILayerZeroEndpoint } from "@LayerZero/contracts/interfaces/ILayerZeroEndpoint.sol";
 import { IOmniCat } from "../src/interfaces/IOmniCat.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 
-contract DeployPredictionPool is Script {
+contract DeployOmniNFTA is Script {
 
     function run() external {
 
@@ -19,7 +18,7 @@ contract DeployPredictionPool is Script {
         uint256 MAX_TOKENS_PER_MINT = vm.envUint("MAX_TOKENS_PER_MINT");
         uint256 MAX_MINTS_PER_ACCOUNT = vm.envUint("MAX_MINTS_PER_ACCOUNT");
         uint256 MINT_COST = vm.envUint("MINT_COST");
-        ILayerZeroEndpoint layerZeroEndpoint = ILayerZeroEndpoint(vm.envAddress("LAYER_ZERO_ENDPOINT"));
+        address layerZeroEndpoint = vm.envAddress("LAYER_ZERO_ENDPOINT");
         IOmniCat omnicat = IOmniCat(vm.envAddress("OMNICAT_ADDRESS"));
 
 
@@ -48,7 +47,7 @@ contract DeployPredictionPool is Script {
 
 
 
-        payable(address(omniNFTA)).transfer(0.02 ether);
+        payable(address(omniNFTA)).transfer(0.01 ether);
 
         vm.stopBroadcast();
     }
