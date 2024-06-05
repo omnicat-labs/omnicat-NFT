@@ -98,8 +98,10 @@ contract BaseTest is Test {
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1e5);
         omniNFT.setDstChainIdToBatchLimit(firstChainId, 10);
 
-        vm.deal(address(omniNFTA), 1e20);
-        vm.deal(address(omniNFT), 1e20);
+        vm.deal(address(admin), 1e20);
+        (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");
+        vm.deal(address(admin), 1e20);
+        (sent, data) = payable(address(omniNFT)).call{value: 1e20, gas: 1e5}("");
 
         layerZeroEndpointMock1.setDestLzEndpoint(address(omnicatMock2), address(layerZeroEndpointMock2));
         layerZeroEndpointMock2.setDestLzEndpoint(address(omnicatMock1), address(layerZeroEndpointMock1));

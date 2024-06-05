@@ -130,10 +130,11 @@ contract OmniNFTA is
                 false,
                 lzCallParams.adapterParams
             );
-            if(address(this).balance < nativeFee){
+            if(interchainTransactionFees < nativeFee){
                 omniUserRefund[userAddress][_srcChainId] += MINT_COST;
                 return;
             }
+            interchainTransactionFees -= nativeFee;
             omnicat.sendFrom{value: nativeFee}(address(this), _srcChainId, userAddressBytes, MINT_COST, lzCallParams);
         }
     }
@@ -164,11 +165,12 @@ contract OmniNFTA is
             payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
             (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
-            if(address(this).balance < nativeFee){
+            if(interchainTransactionFees < nativeFee){
                 bytes32 hashedPayload = keccak256(payload);
                 NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, tokens);
                 return;
             }
+            interchainTransactionFees -= nativeFee;
             _lzSend(_srcChainId, payload, payable(address(this)), address(0), adapterParams, nativeFee);
             emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokens);
         }
@@ -191,8 +193,9 @@ contract OmniNFTA is
             false,
             lzCallParams.adapterParams
         );
-        require(address(this).balance + msg.value >= nativeFee, "send more funds");
-
+        require(interchainTransactionFees + msg.value >= nativeFee, "send more funds");
+        interchainTransactionFees += msg.value;
+        interchainTransactionFees -= nativeFee;
         omniUserRefund[userAddress][chainID] = 0;
         omnicat.sendFrom{value: nativeFee}(address(this), chainID, userAddressBytes, refundAmount, lzCallParams);
     }
@@ -204,7 +207,9 @@ contract OmniNFTA is
         payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
         (uint256 nativeFee, ) = lzEndpoint.estimateFees(refundObject.chainID, address(this), payload, false, adapterParams);
-        require(address(this).balance + msg.value >= nativeFee, "send more funds");
+        require(interchainTransactionFees + msg.value >= nativeFee, "send more funds");
+        interchainTransactionFees += msg.value;
+        interchainTransactionFees -= nativeFee;
 
         _lzSend(refundObject.chainID, payload, payable(address(this)), address(0), adapterParams, nativeFee);
         emit SendToChain(refundObject.chainID, address(this), abi.encode(refundObject.userAddress), refundObject.tokens);

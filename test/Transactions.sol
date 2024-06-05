@@ -90,7 +90,9 @@ contract testTransactions is BaseTest {
     }
 
     function testRefunds() public {
-        vm.deal(address(omniNFTA), 0);
+        vm.startPrank(admin);
+        omniNFTA.extractNative(0);
+        vm.stopPrank();
 
         vm.startPrank(user1);
         uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
@@ -101,7 +103,8 @@ contract testTransactions is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(admin);
-        vm.deal(address(omniNFTA), 1e20);
+        (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");
+
         uint256[] memory tokens = new uint256[](10);
         for(uint256 i=0;i<10;i++){
             tokens[i] = i+1;
@@ -114,7 +117,10 @@ contract testTransactions is BaseTest {
         vm.assertEq(omniNFT.ownerOf(2), user1);
         vm.stopPrank();
 
-        vm.deal(address(omniNFTA), 0);
+        vm.startPrank(admin);
+        omniNFTA.extractNative(0);
+        vm.stopPrank();
+
         vm.startPrank(user1);
         prevBalance = omnicatMock2.balanceOf(user1);
         uint256 burnFee = omniNFT.estimateBurnFees(1);
@@ -127,7 +133,9 @@ contract testTransactions is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(admin);
-        vm.deal(address(omniNFTA), 1e20);
+        vm.deal(admin, 15e19);
+        (sent, data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");
+
         omniNFTA.sendOmniRefund(user1, secondChainId);
         vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + omniNFT.MINT_COST());
         vm.stopPrank();
@@ -170,7 +178,9 @@ contract testTransactions is BaseTest {
         // Since minting is not allowed, user should be able to get omni refund
         vm.startPrank(admin);
         prevBalance = omnicatMock2.balanceOf(address(user1));
-        vm.deal(address(omniNFTA), 1e20);
+        vm.deal(admin, 1e20);
+        (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");
+
         omniNFTA.sendOmniRefund(user1, secondChainId);
         vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + 10*omniNFT.MINT_COST());
         vm.stopPrank();
