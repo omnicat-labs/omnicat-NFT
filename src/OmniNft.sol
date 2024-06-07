@@ -44,7 +44,7 @@ contract OmniNFT is
     // ===================== Public Functions ===================== //
 
     function estimateMintFees() external view returns (uint256) {
-        bytes memory payload = abi.encode(msg.sender, mintNumber);
+        bytes memory payload = abi.encode(msg.sender, 1);
         payload = abi.encodePacked(MessageType.MINT, payload);
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
