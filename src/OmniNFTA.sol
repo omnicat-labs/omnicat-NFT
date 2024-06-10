@@ -22,6 +22,20 @@ contract OmniNFTA is
         uint256[] tokens;
     }
 
+    event SetUserOmniRefund (
+        address userAddress,
+        uint16 chainId,
+        uint256 refundAmount
+    );
+
+    event SetUserMintRefund (
+        bytes32 hashedPayload,
+        address userAddress,
+        uint16 chainId,
+        uint256[] tokens,
+        bool done
+    );
+
     // ===================== Constants ===================== //
 
     // AccessControl roles.
@@ -132,6 +146,7 @@ contract OmniNFTA is
             );
             if(interchainTransactionFees < nativeFee){
                 omniUserRefund[userAddress][_srcChainId] += MINT_COST;
+                emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
             }
             interchainTransactionFees -= nativeFee;
@@ -168,6 +183,7 @@ contract OmniNFTA is
             if(interchainTransactionFees < nativeFee){
                 bytes32 hashedPayload = keccak256(payload);
                 NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, tokens);
+                emit SetUserMintRefund(hashedPayload, userAddress, _srcChainId, tokens, false);
                 return;
             }
             interchainTransactionFees -= nativeFee;
@@ -197,11 +213,15 @@ contract OmniNFTA is
         interchainTransactionFees += msg.value;
         interchainTransactionFees -= nativeFee;
         omniUserRefund[userAddress][chainID] = 0;
+
         omnicat.sendFrom{value: nativeFee}(address(this), chainID, userAddressBytes, refundAmount, lzCallParams);
+        emit SetUserOmniRefund(userAddress, chainID, omniUserRefund[userAddress][chainID]);
     }
 
     function sendNFTRefund(bytes32 hashedPayload) public payable {
         NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
+        require(refundObject.userAddress != address(0), "not a valid refund object");
+
         bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
         bytes memory payload = abi.encode(abi.encodePacked(refundObject.userAddress), refundObject.tokens);
         payload = abi.encodePacked(MessageType.TRANSFER, payload);
@@ -210,9 +230,12 @@ contract OmniNFTA is
         require(interchainTransactionFees + msg.value >= nativeFee, "send more funds");
         interchainTransactionFees += msg.value;
         interchainTransactionFees -= nativeFee;
+        uint256[] memory emptyArray = new uint[](0);
+        NFTUserRefund[hashedPayload] = NFTRefund(address(0), uint16(0), emptyArray);
 
         _lzSend(refundObject.chainID, payload, payable(address(this)), address(0), adapterParams, nativeFee);
         emit SendToChain(refundObject.chainID, address(this), abi.encode(refundObject.userAddress), refundObject.tokens);
+        emit SetUserMintRefund(hashedPayload, refundObject.userAddress, refundObject.chainID, refundObject.tokens, true);
     }
 
     // ===================== interval Functions ===================== //
