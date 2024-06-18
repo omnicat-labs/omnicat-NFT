@@ -160,15 +160,19 @@ contract OmniNFTA is
     }
 
     // This is called by interchain mints
-    function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 , uint _amount, bytes calldata _payload) external override {
+    function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 _from, uint _amount, bytes calldata _payload) external override {
         require(msg.sender == address(omnicat));
+
+        address rootCaller = address(uint160(uint256(_from)));
+        address trustedRemoteLookupAddress = retrieveTrustedRemote(_srcChainId);
+        require(rootCaller == trustedRemoteLookupAddress);
 
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){
             (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
-            if(_amount < mintNumber*MINT_COST || mintNumber > MAX_TOKENS_PER_MINT || nextTokenIdMint + mintNumber > COLLECTION_SIZE ){
+            if((_amount < mintNumber*MINT_COST) || (mintNumber > MAX_TOKENS_PER_MINT) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) ){
                 // create refund for user
-                omniUserRefund[userAddress][_srcChainId] += mintNumber*MINT_COST;
+                omniUserRefund[userAddress][_srcChainId] += _amount;
                 return;
             }
             uint256[] memory tokens = new uint256[](mintNumber);
@@ -252,5 +256,18 @@ contract OmniNFTA is
     ) internal virtual override {
         require(_exists(_tokenId) && _ownerOf(_tokenId) == address(this));
         _transfer(address(this), _toAddress, _tokenId);
+    }
+
+    function retrieveTrustedRemote(uint16 _srcChainId) internal view returns (address) {
+        bytes memory path = trustedRemoteLookup[_srcChainId];
+
+        require(path.length != 0, "LzApp: no trusted path record");
+
+        address trustedRemote;
+        assembly {
+            trustedRemote := mload(add(path,20))
+        }
+
+        return trustedRemote;
     }
 }
