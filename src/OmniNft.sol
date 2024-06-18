@@ -92,6 +92,13 @@ contract OmniNFT is
         );
         interchainTransactionFees += nftBridgeFee;
         require(msg.value >= (nftBridgeFee + omniBridgeFee), "not enough fees");
+
+        uint256 remainder = msg.value - (nftBridgeFee + omniBridgeFee);
+        if(remainder > 0){
+            bool success = payable(msg.sender).send(remainder);
+            require(success, "failed to refund");
+        }
+
         omnicat.sendAndCall{value: omniBridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, dstGasReserve, lzCallParams);
     }
 
@@ -130,6 +137,13 @@ contract OmniNFT is
         interchainTransactionFees += omniBridgeFee;
 
         require(msg.value >= (omniBridgeFee + nftBridgeFee), "not enough to cover fees");
+
+        uint256 remainder = msg.value - (nftBridgeFee + omniBridgeFee);
+        if(remainder > 0){
+            bool success = payable(msg.sender).send(remainder);
+            require(success, "failed to refund");
+        }
+
         _lzSend(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             payload,

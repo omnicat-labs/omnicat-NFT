@@ -20,13 +20,13 @@ contract BaseTest is Test {
     uint16 firstChainId = 1;
     uint16 secondChainId = 2;
 
-    address admin = address(0x1);
+    address admin = address(0x01FAA242EE03D7F6A89c9135354461d2e4151193);
     uint256 timestamp = 1e7;
 
-    address user1 = address(0x8);
-    address user2 = address(0x9);
-    address user3 = address(0xa);
-    address user4 = address(0xb);
+    address user1 = address(0xe7723BB629F31dE081Ee4D2768D5D8E9dc667957);
+    address user2 = address(0x2E6cE76692c37560B8EC688199Ee5BC8CE51f7b7);
+    address user3 = address(0xA602F1E2f1Db156A5207A300d539E59F687e5109);
+    address user4 = address(0xdBC401642f390D89Ee35B2C662C4bF5F1CbE9673);
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x0000000000000000000000000000000000000000000000000000000000000000;
 
