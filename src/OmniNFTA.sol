@@ -133,6 +133,7 @@ contract OmniNFTA is
                 payload = abi.encodePacked(MessageType.TRANSFER, payload);
                 bytes32 hashedPayload = keccak256(payload);
                 NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, _toSingletonArray(tokenId));
+                emit SetUserMintRefund(hashedPayload, userAddress, _srcChainId, _toSingletonArray(tokenId), false);
                 return;
             }
             _burn(tokenId);
@@ -173,6 +174,7 @@ contract OmniNFTA is
             if((_amount < mintNumber*MINT_COST) || (mintNumber > MAX_TOKENS_PER_MINT) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) ){
                 // create refund for user
                 omniUserRefund[userAddress][_srcChainId] += _amount;
+                emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
             }
             uint256[] memory tokens = new uint256[](mintNumber);
