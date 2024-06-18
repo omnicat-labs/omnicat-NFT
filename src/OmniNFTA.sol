@@ -8,6 +8,7 @@ import { IOFTReceiverV2 } from "@LayerZero-Examples/contracts/token/oft/v2/inter
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IBlast } from "./interfaces/IBlast.sol";
 
 contract OmniNFTA is
     OmniNFTBase,
@@ -37,6 +38,7 @@ contract OmniNFTA is
     );
 
     // ===================== Constants ===================== //
+    IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
     // AccessControl roles.
 
@@ -55,7 +57,11 @@ contract OmniNFTA is
         address _lzEndpoint
     )
         OmniNFTBase(_omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
-    {}
+
+    {
+        BLAST.configureClaimableGas();
+        BLAST.configureGovernor(msg.sender);
+    }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
 

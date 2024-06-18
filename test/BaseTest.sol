@@ -7,6 +7,7 @@ import { LZEndpointMock } from "@LayerZero-Examples/contracts/lzApp/mocks/LZEndp
 import { OmniCatMock } from "../src/mocks/OmniCatMock.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IBlast } from "../src/interfaces/IBlast.sol";
 
 contract BaseTest is Test {
     OmniNFTA public omniNFTA;
@@ -29,6 +30,7 @@ contract BaseTest is Test {
     address user4 = address(0xdBC401642f390D89Ee35B2C662C4bF5F1CbE9673);
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
     function setUp() public {
         vm.startPrank(admin);
@@ -57,6 +59,17 @@ contract BaseTest is Test {
         omnicatMock2.transfer(user3, 100e25);
         omnicatMock2.transfer(user4, 100e25);
 
+
+        vm.mockCall(
+            address(BLAST),
+            abi.encodeWithSelector(IBlast.configureClaimableGas.selector),
+            ""
+        );
+        vm.mockCall(
+            address(BLAST),
+            abi.encodeWithSelector(IBlast.configureGovernor.selector, admin),
+            ""
+        );
         omniNFTA = new OmniNFTA(
             omnicatMock1,
             NftInfo({
