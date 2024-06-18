@@ -114,9 +114,7 @@ contract OmniNFTBase is
         if(!revealed){
             return baseURI;
         }
-        else{
-            super.tokenURI(tokenId);
-        }
+        super.tokenURI(tokenId);
     }
 
     // ===================== interval Functions ===================== //
