@@ -61,10 +61,9 @@ contract OmniNFTA is
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
 
-
     // ===================== Public Functions ===================== //
 
-    function mint(uint256 mintNumber) external nonReentrant() {
+    function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
         require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
@@ -78,7 +77,7 @@ contract OmniNFTA is
         }
     }
 
-    function burn(uint256 tokenId) external nonReentrant() {
+    function burn(uint256 tokenId) external nonReentrant() whenNotPaused() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
         require(nextTokenIdMint >= COLLECTION_SIZE, "mint not completed yet");
         _burn(tokenId);
@@ -192,7 +191,7 @@ contract OmniNFTA is
         }
     }
 
-    function sendOmniRefund(address userAddress, uint16 chainID) public payable {
+    function sendOmniRefund(address userAddress, uint16 chainID) public payable whenNotPaused() {
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(address(this)),
             zroPaymentAddress: address(0),
@@ -218,7 +217,7 @@ contract OmniNFTA is
         emit SetUserOmniRefund(userAddress, chainID, omniUserRefund[userAddress][chainID]);
     }
 
-    function sendNFTRefund(bytes32 hashedPayload) public payable {
+    function sendNFTRefund(bytes32 hashedPayload) public payable whenNotPaused() {
         NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
         require(refundObject.userAddress != address(0), "not a valid refund object");
 

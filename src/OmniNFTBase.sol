@@ -11,11 +11,13 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 
 
 contract OmniNFTBase is
     ReentrancyGuard,
-    ONFT721
+    ONFT721,
+    Pausable
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
@@ -79,6 +81,22 @@ contract OmniNFTBase is
     }
 
 
+    function pauseContract()
+        external
+        nonReentrant
+        onlyOwner()
+    {
+        _pause();
+    }
+
+    function unpauseContract()
+        external
+        nonReentrant
+        onlyOwner()
+    {
+        _unpause();
+    }
+
     // ===================== Public Functions ===================== //
 
     receive() external payable {
@@ -93,7 +111,7 @@ contract OmniNFTBase is
         address payable _refundAddress,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) internal override {
+    ) internal override whenNotPaused() {
         // allow 1 by default
         require(_tokenIds.length > 0, "tokenIds[] is empty");
         require(_tokenIds.length == 1 || _tokenIds.length <= dstChainIdToBatchLimit[_dstChainId], "batch size exceeds dst batch limit");
