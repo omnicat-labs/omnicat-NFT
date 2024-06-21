@@ -10,8 +10,12 @@ import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { BaseTest } from "./BaseTest.sol";
 
 contract testTransactions is BaseTest {
+    event CollectionMinted();
+
     function testNormalMintTransactionBurn() public {
         vm.startPrank(user1);
+        vm.expectEmit(address(omniNFTA));
+        emit CollectionMinted();
         omniNFTA.mint(10);
         vm.assertEq(omniNFTA.balanceOf(user1), 10);
         vm.assertEq(omniNFTA.ownerOf(1), user1);

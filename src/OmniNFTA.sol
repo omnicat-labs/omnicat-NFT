@@ -35,6 +35,8 @@ contract OmniNFTA is
         bool done
     );
 
+    event CollectionMinted();
+
     // ===================== Constants ===================== //
     IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
@@ -70,7 +72,7 @@ contract OmniNFTA is
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
-        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE + 1, "collection size exceeded");
+        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
         for(uint256 i=0;i<mintNumber;){
@@ -79,6 +81,9 @@ contract OmniNFTA is
                 nextTokenIdMint++;
                 i++;
             }
+        }
+        if(nextTokenIdMint == COLLECTION_SIZE){
+            emit CollectionMinted();
         }
     }
 
