@@ -17,7 +17,6 @@ struct NftInfo {
 }
 
 enum MessageType {
-    MINT,
     BURN,
     TRANSFER
 }

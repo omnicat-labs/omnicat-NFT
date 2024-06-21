@@ -4,15 +4,13 @@ pragma solidity 0.8.19;
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
-import { IOFTReceiverV2 } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/IOFTReceiverV2.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { IBlast } from "./interfaces/IBlast.sol";
 
 contract OmniNFTA is
-    OmniNFTBase,
-    IOFTReceiverV2
+    OmniNFTBase
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
@@ -72,12 +70,13 @@ contract OmniNFTA is
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
-        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
+        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE + 1, "collection size exceeded");
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
         for(uint256 i=0;i<mintNumber;){
-            _safeMint(msg.sender, ++nextTokenIdMint);
+            _safeMint(msg.sender, nextTokenIdMint);
             unchecked {
+                nextTokenIdMint++;
                 i++;
             }
         }
@@ -157,49 +156,6 @@ contract OmniNFTA is
             }
             interchainTransactionFees -= nativeFee;
             omnicat.sendFrom{value: nativeFee}(address(this), _srcChainId, userAddressBytes, MINT_COST, lzCallParams);
-        }
-    }
-
-    // This is called by interchain mints
-    function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 _from, uint _amount, bytes calldata _payload) external override {
-        require(msg.sender == address(omnicat));
-
-        address rootCaller = address(uint160(uint256(_from)));
-        address trustedRemoteLookupAddress = retrieveTrustedRemote(_srcChainId);
-        require(rootCaller == trustedRemoteLookupAddress);
-
-        MessageType messageType = MessageType(uint8(_payload[0]));
-        if(messageType == MessageType.MINT){
-            (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
-            if((_amount < mintNumber*MINT_COST) || (mintNumber > MAX_TOKENS_PER_MINT) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) ){
-                // create refund for user
-                omniUserRefund[userAddress][_srcChainId] += _amount;
-                emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
-                return;
-            }
-            uint256[] memory tokens = new uint256[](mintNumber);
-            for(uint256 i=0;i<mintNumber;){
-                _mint(address(this), ++nextTokenIdMint);
-                tokens[i] = nextTokenIdMint;
-                unchecked {
-                    i++;
-                }
-            }
-
-            bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(dstGasReserve));
-            bytes memory payload = abi.encode(abi.encodePacked(userAddress), tokens);
-            payload = abi.encodePacked(MessageType.TRANSFER, payload);
-
-            (uint256 nativeFee, ) = lzEndpoint.estimateFees(_srcChainId, address(this), payload, false, adapterParams);
-            if(interchainTransactionFees < nativeFee){
-                bytes32 hashedPayload = keccak256(payload);
-                NFTUserRefund[hashedPayload] = NFTRefund(userAddress, _srcChainId, tokens);
-                emit SetUserMintRefund(hashedPayload, userAddress, _srcChainId, tokens, false);
-                return;
-            }
-            interchainTransactionFees -= nativeFee;
-            _lzSend(_srcChainId, payload, payable(address(this)), address(0), adapterParams, nativeFee);
-            emit SendToChain(_srcChainId, address(this), abi.encode(userAddress), tokens);
         }
     }
 
