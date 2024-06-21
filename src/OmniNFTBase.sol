@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { ONFT721 } from "@LayerZero-Examples/contracts/token/onft721/ONFT721.sol";
 import { IONFT721 } from "@LayerZero-Examples/contracts/token/onft721/interfaces/IONFT721.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
+import { ExcessivelySafeCall } from "@LayerZero-Examples/contracts/libraries/ExcessivelySafeCall.sol";
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
@@ -21,9 +22,11 @@ contract OmniNFTBase is
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
+    using ExcessivelySafeCall for address;
 
     // ===================== Constants ===================== //
-    uint64 public dstGasReserve = 1e6;
+    uint64 public extraGas = 3e5;
+    uint64 public dstGasReserve = 1e6+extraGas;
     string public baseURI;
     uint256 public immutable MINT_COST;
     uint256 public immutable MAX_TOKENS_PER_MINT;
@@ -138,5 +141,22 @@ contract OmniNFTBase is
     // ===================== interval Functions ===================== //
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    function _blockingLzReceive(
+      uint16 _srcChainId,
+      bytes memory _srcAddress,
+      uint64 _nonce,
+      bytes memory _payload
+    ) internal virtual override {
+        uint256 gasToStoreFailedPayload = gasleft() - extraGas;
+        (bool success, bytes memory reason) = address(this).excessivelySafeCall(
+            gasToStoreFailedPayload,
+            150,
+            abi.encodeWithSelector(this.nonblockingLzReceive.selector, _srcChainId, _srcAddress, _nonce, _payload)
+        );
+        if (!success) {
+          _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, reason);
+        }
     }
 }
