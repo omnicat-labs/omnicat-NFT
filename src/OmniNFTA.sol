@@ -48,6 +48,7 @@ contract OmniNFTA is
     uint256 public nextTokenIdMint = 0;
     mapping (address userAddress => mapping(uint16 chainId => uint256 refundAmount)) public omniUserRefund;
     mapping (bytes32 hashedPayload => NFTRefund userRefund) public NFTUserRefund;
+    mapping (address userAddress => uint256 mintedNumber) public UserMintedNumber;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -71,10 +72,11 @@ contract OmniNFTA is
 
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
-        require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
+        require(UserMintedNumber[msg.sender] + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
         require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
+        UserMintedNumber[msg.sender] += mintNumber;
         for(uint256 i=0;i<mintNumber;){
             _safeMint(msg.sender, nextTokenIdMint);
             unchecked {
