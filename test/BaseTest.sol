@@ -81,7 +81,8 @@ contract BaseTest is Test {
                 symbol: "onft"
             }),
             1e4,
-            address(layerZeroEndpointMock1)
+            address(layerZeroEndpointMock1),
+            timestamp
         );
         BaseChainInfo memory baseChainInfo = BaseChainInfo({
             BASE_CHAIN_ID: firstChainId,
@@ -143,5 +144,6 @@ contract BaseTest is Test {
         omnicatMock1.approve(address(omniNFTA), 100e25);
         omnicatMock2.approve(address(omniNFT), 100e25);
         vm.stopPrank();
+        vm.warp(timestamp);
     }
 }

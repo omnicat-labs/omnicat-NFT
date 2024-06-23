@@ -39,6 +39,7 @@ contract OmniNFTA is
 
     // ===================== Constants ===================== //
     IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
+    uint256 public immutable mintStartTimestamp;
 
     // AccessControl roles.
 
@@ -55,13 +56,15 @@ contract OmniNFTA is
         IOmniCat _omnicat,
         NftInfo memory _nftInfo,
         uint _minGasToTransfer,
-        address _lzEndpoint
+        address _lzEndpoint,
+        uint _mintStartTimestamp
     )
         OmniNFTBase(_omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
 
     {
         BLAST.configureClaimableGas();
         BLAST.configureGovernor(msg.sender);
+        mintStartTimestamp = _mintStartTimestamp;
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
@@ -73,6 +76,7 @@ contract OmniNFTA is
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
         require(UserMintedNumber[msg.sender] + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
         require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
+        require(mintStartTimestamp <= block.timestamp, "minting period not started");
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
         UserMintedNumber[msg.sender] += mintNumber;

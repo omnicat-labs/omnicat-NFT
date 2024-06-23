@@ -201,4 +201,11 @@ contract testTransactions is BaseTest {
         vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), 10*omniNFTA.MINT_COST());
         vm.stopPrank();
     }
+
+    function testMintTimestamp() public {
+        vm.warp(0);
+        vm.startPrank(user1);
+        vm.expectRevert("minting period not started");
+        omniNFTA.mint(10);
+    }
 }
