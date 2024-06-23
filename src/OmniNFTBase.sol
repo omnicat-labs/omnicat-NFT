@@ -77,7 +77,7 @@ contract OmniNFTBase is
         }
         require(amount <= interchainTransactionFees, "cannot take that much");
         interchainTransactionFees -= amount;
-        (bool sent, bytes memory data) = payable(msg.sender).call{value: amount}("");
+        (bool sent, ) = payable(msg.sender).call{value: amount}("");
         require(sent, "Failed to send");
     }
 

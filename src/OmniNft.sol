@@ -59,7 +59,6 @@ contract OmniNFT is
             zroPaymentAddress: address(0),
             adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
         });
-        bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
 
@@ -77,8 +76,6 @@ contract OmniNFT is
             zroPaymentAddress: address(0),
             adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
         });
-
-        bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
         interchainTransactionFees += omniBridgeFee;
