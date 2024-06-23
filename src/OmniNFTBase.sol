@@ -25,7 +25,7 @@ contract OmniNFTBase is
     using ExcessivelySafeCall for address;
 
     // ===================== Constants ===================== //
-    uint64 public extraGas = 3e5;
+    uint64 public extraGas = 3e4;
     uint64 public dstGasReserve = 1e6+extraGas;
     string public baseURI;
     uint256 public immutable MINT_COST;
@@ -149,6 +149,7 @@ contract OmniNFTBase is
       uint64 _nonce,
       bytes memory _payload
     ) internal virtual override {
+        require(gasleft() >= extraGas);
         uint256 gasToStoreFailedPayload = gasleft() - extraGas;
         (bool success, bytes memory reason) = address(this).excessivelySafeCall(
             gasToStoreFailedPayload,
