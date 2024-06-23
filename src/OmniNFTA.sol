@@ -166,7 +166,7 @@ contract OmniNFTA is
         }
     }
 
-    function sendOmniRefund(address userAddress, uint16 chainID) public payable whenNotPaused() {
+    function sendOmniRefund(address userAddress, uint16 chainID) public payable {
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(address(this)),
             zroPaymentAddress: address(0),
@@ -192,7 +192,7 @@ contract OmniNFTA is
         emit SetUserOmniRefund(userAddress, chainID, omniUserRefund[userAddress][chainID]);
     }
 
-    function sendNFTRefund(bytes32 hashedPayload) public payable whenNotPaused() {
+    function sendNFTRefund(bytes32 hashedPayload) public payable {
         NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
         require(refundObject.userAddress != address(0), "not a valid refund object");
 
