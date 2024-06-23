@@ -75,7 +75,6 @@ contract BaseTest is Test {
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_TOKENS_PER_MINT: 10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",
@@ -94,7 +93,6 @@ contract BaseTest is Test {
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_TOKENS_PER_MINT: 10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",

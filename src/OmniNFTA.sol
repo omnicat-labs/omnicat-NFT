@@ -71,7 +71,6 @@ contract OmniNFTA is
     // ===================== Public Functions ===================== //
 
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
-        require(mintNumber <= MAX_TOKENS_PER_MINT, "Too many in one transaction");
         require(UserMintedNumber[msg.sender] + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
         require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
 

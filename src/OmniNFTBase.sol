@@ -29,7 +29,6 @@ contract OmniNFTBase is
     uint64 public dstGasReserve = 1e6+extraGas;
     string public baseURI;
     uint256 public immutable MINT_COST;
-    uint256 public immutable MAX_TOKENS_PER_MINT;
     uint256 public immutable MAX_MINTS_PER_ACCOUNT;
     uint256 public immutable COLLECTION_SIZE;
 
@@ -55,7 +54,6 @@ contract OmniNFTBase is
         omnicat = _omnicat;
         baseURI = _nftInfo.baseURI;
         MINT_COST = _nftInfo.MINT_COST;
-        MAX_TOKENS_PER_MINT = _nftInfo.MAX_TOKENS_PER_MINT;
         MAX_MINTS_PER_ACCOUNT = _nftInfo.MAX_MINTS_PER_ACCOUNT;
         COLLECTION_SIZE = _nftInfo.COLLECTION_SIZE;
     }
