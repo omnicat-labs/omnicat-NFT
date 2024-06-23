@@ -101,7 +101,8 @@ contract BaseTest is Test {
                 symbol: "onft"
             }),
             1e4,
-            address(layerZeroEndpointMock2)
+            address(layerZeroEndpointMock2),
+            5e16
         );
 
         omniNFTA.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omniNFT)));

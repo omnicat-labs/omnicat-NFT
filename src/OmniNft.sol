@@ -22,6 +22,7 @@ contract OmniNFT is
     // External contracts.
 
     // ===================== Storage ===================== //
+    uint256 omniBridgeFee;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -29,16 +30,22 @@ contract OmniNFT is
         IOmniCat _omnicat,
         NftInfo memory _nftInfo,
         uint _minGasToTransfer,
-        address _lzEndpoint
+        address _lzEndpoint,
+        uint _omniBridgeFee
     )
         OmniNFTBase(_omnicat, _nftInfo, _minGasToTransfer, _lzEndpoint)
     {
         BASE_CHAIN_INFO = _baseChainInfo;
+        omniBridgeFee = _omniBridgeFee;
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
+
+    function setOmniBridgeFee(uint256 _omniBridgeFee) public onlyOwner() {
+        omniBridgeFee = _omniBridgeFee;
+    }
 
 
     // ===================== Public Functions ===================== //
@@ -54,7 +61,6 @@ contract OmniNFT is
         });
         bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
-        (uint256 omniBridgeFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
 
         return omniBridgeFee + nftBridgeFee;
@@ -71,9 +77,9 @@ contract OmniNFT is
             zroPaymentAddress: address(0),
             adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
         });
+
         bytes32 senderBytes = bytes32(uint256(uint160(msg.sender)));
 
-        (uint256 omniBridgeFee, ) = omnicat.estimateSendFee(BASE_CHAIN_INFO.BASE_CHAIN_ID, senderBytes, MINT_COST, false, lzCallParams.adapterParams);
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
         interchainTransactionFees += omniBridgeFee;
 
@@ -82,6 +88,7 @@ contract OmniNFT is
         uint256 remainder = msg.value - (nftBridgeFee + omniBridgeFee);
         if(remainder > 0){
             bool success = payable(msg.sender).send(remainder);
+            // bool success = payable(msg.sender).call{value:remainder}("");
             require(success, "failed to refund");
         }
 
