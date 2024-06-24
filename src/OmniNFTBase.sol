@@ -38,8 +38,8 @@ contract OmniNFTBase is
     IOmniCat public omnicat;
 
     // ===================== Storage ===================== //
-    uint256 interchainTransactionFees = 0;
-    bool revealed = false;
+    uint256 public interchainTransactionFees = 0;
+    bool public revealed = false;
 
     // ===================== Constructor ===================== //
     constructor(

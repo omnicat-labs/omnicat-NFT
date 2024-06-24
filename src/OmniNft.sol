@@ -22,7 +22,7 @@ contract OmniNFT is
     // External contracts.
 
     // ===================== Storage ===================== //
-    uint256 omniBridgeFee;
+    uint256 public omniBridgeFee;
 
     // ===================== Constructor ===================== //
     constructor(
