@@ -48,9 +48,9 @@ contract DeployOmniNFT is Script {
         );
 
         // THIS NEEDS TO BE CALLED EVENTUALLY
-        omniNFT.setTrustedRemoteAddress(baseChainId, abi.encodePacked(omniNFTA));
-        omniNFT.setMinDstGas(baseChainId, 0, 1e5);
-        omniNFT.setMinDstGas(baseChainId, 1, 1e5);
+        // omniNFT.setTrustedRemoteAddress(baseChainId, abi.encodePacked(omniNFTA));
+        // omniNFT.setMinDstGas(baseChainId, 0, 1e5);
+        // omniNFT.setMinDstGas(baseChainId, 1, 1e5);
 
 
 

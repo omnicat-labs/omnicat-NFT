@@ -24,7 +24,8 @@ contract ConfigureOmniNFTA is ParamSetChains {
                 continue;
             }
             omniNFTA.setTrustedRemoteAddress(chainIds[i], abi.encodePacked(address(chainIdToContract[chainIds[i]])) );
-            omniNFTA.setMinDstGas(chainIds[i], omniNFTA.FUNCTION_TYPE_SEND(), 1e5);
+            omniNFTA.setMinDstGas(chainIds[i], uint16(0), 1e5);
+            omniNFTA.setMinDstGas(chainIds[i], uint16(1), 1e5);
             omniNFTA.setDstChainIdToBatchLimit(chainIds[i], 10);
         }
 

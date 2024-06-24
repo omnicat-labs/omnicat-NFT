@@ -16,19 +16,18 @@ contract ConfigureOmniNFT is ParamSetChains {
         uint16 CURRENT_CHAIN_ID = uint16(vm.envUint("CURRENT_CHAIN_ID"));
         OmniNFT omniNFT = OmniNFT(payable(chainIdToContract[CURRENT_CHAIN_ID]));
 
-        uint omniBridgeFee = vm.envUint("OMNI_BRIDGE_FEE");
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         vm.startBroadcast(deployerPrivateKey);
 
         for(uint16 i=0; i<chainIds.length;i++){
-            if(chainIds[i] == CURRENT_CHAIN_ID){
+            if(chainIds[i] == CURRENT_CHAIN_ID || chainIdToContract[chainIds[i]] == address(0)){
                 continue;
             }
             omniNFT.setTrustedRemoteAddress(chainIds[i], abi.encodePacked(address(chainIdToContract[chainIds[i]])) );
-            omniNFT.setMinDstGas(chainIds[i], omniNFT.FUNCTION_TYPE_SEND(), 1e5);
+            omniNFT.setMinDstGas(chainIds[i], uint16(0), 1e5);
+            omniNFT.setMinDstGas(chainIds[i], uint16(1), 1e5);
             omniNFT.setDstChainIdToBatchLimit(chainIds[i], 10);
-            omniNFT.setOmniBridgeFee(omniBridgeFee);
         }
 
         vm.stopBroadcast();
