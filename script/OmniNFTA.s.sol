@@ -15,9 +15,9 @@ contract DeployOmniNFTA is Script {
         string memory NAME = vm.envString("NAME");
         string memory SYMBOL = vm.envString("SYMBOL");
         uint256 COLLECTION_SIZE = vm.envUint("COLLECTION_SIZE");
-        uint256 MAX_TOKENS_PER_MINT = vm.envUint("MAX_TOKENS_PER_MINT");
         uint256 MAX_MINTS_PER_ACCOUNT = vm.envUint("MAX_MINTS_PER_ACCOUNT");
         uint256 MINT_COST = vm.envUint("MINT_COST");
+        uint256 MINT_TIMESTAMP = vm.envUint("MINT_TIMESTAMP");
         address layerZeroEndpoint = vm.envAddress("LAYER_ZERO_ENDPOINT");
         IOmniCat omnicat = IOmniCat(vm.envAddress("OMNICAT_ADDRESS"));
 
@@ -32,14 +32,14 @@ contract DeployOmniNFTA is Script {
             NftInfo({
                 baseURI: BASE_URI,
                 MINT_COST: MINT_COST,
-                MAX_TOKENS_PER_MINT: MAX_TOKENS_PER_MINT,
                 MAX_MINTS_PER_ACCOUNT: MAX_MINTS_PER_ACCOUNT,
                 COLLECTION_SIZE: COLLECTION_SIZE,
                 name: NAME,
                 symbol: SYMBOL
             }),
             1e4,
-            address(layerZeroEndpoint)
+            address(layerZeroEndpoint),
+            MINT_TIMESTAMP
         );
 
         // THIS NEEDS TO BE CALLED EVENTUALLY
@@ -47,7 +47,7 @@ contract DeployOmniNFTA is Script {
 
 
 
-        payable(address(omniNFTA)).transfer(0.01 ether);
+        // payable(address(omniNFTA)).transfer(0.01 ether);
 
         vm.stopBroadcast();
     }

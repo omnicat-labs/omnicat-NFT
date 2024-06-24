@@ -7,6 +7,7 @@ import { LZEndpointMock } from "@LayerZero-Examples/contracts/lzApp/mocks/LZEndp
 import { OmniCatMock } from "../src/mocks/OmniCatMock.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IBlast } from "../src/interfaces/IBlast.sol";
 
 contract BaseTest is Test {
     OmniNFTA public omniNFTA;
@@ -20,15 +21,16 @@ contract BaseTest is Test {
     uint16 firstChainId = 1;
     uint16 secondChainId = 2;
 
-    address admin = address(0x1);
+    address admin = address(0x01FAA242EE03D7F6A89c9135354461d2e4151193);
     uint256 timestamp = 1e7;
 
-    address user1 = address(0x8);
-    address user2 = address(0x9);
-    address user3 = address(0xa);
-    address user4 = address(0xb);
+    address user1 = address(0xe7723BB629F31dE081Ee4D2768D5D8E9dc667957);
+    address user2 = address(0x2E6cE76692c37560B8EC688199Ee5BC8CE51f7b7);
+    address user3 = address(0xA602F1E2f1Db156A5207A300d539E59F687e5109);
+    address user4 = address(0xdBC401642f390D89Ee35B2C662C4bF5F1CbE9673);
 
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x0000000000000000000000000000000000000000000000000000000000000000;
+    IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
     function setUp() public {
         vm.startPrank(admin);
@@ -57,19 +59,30 @@ contract BaseTest is Test {
         omnicatMock2.transfer(user3, 100e25);
         omnicatMock2.transfer(user4, 100e25);
 
+
+        vm.mockCall(
+            address(BLAST),
+            abi.encodeWithSelector(IBlast.configureClaimableGas.selector),
+            ""
+        );
+        vm.mockCall(
+            address(BLAST),
+            abi.encodeWithSelector(IBlast.configureGovernor.selector, admin),
+            ""
+        );
         omniNFTA = new OmniNFTA(
             omnicatMock1,
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_TOKENS_PER_MINT: 10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",
                 symbol: "onft"
             }),
             1e4,
-            address(layerZeroEndpointMock1)
+            address(layerZeroEndpointMock1),
+            timestamp
         );
         BaseChainInfo memory baseChainInfo = BaseChainInfo({
             BASE_CHAIN_ID: firstChainId,
@@ -81,14 +94,14 @@ contract BaseTest is Test {
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_TOKENS_PER_MINT: 10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",
                 symbol: "onft"
             }),
             1e4,
-            address(layerZeroEndpointMock2)
+            address(layerZeroEndpointMock2),
+            5e16
         );
 
         omniNFTA.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omniNFT)));
@@ -131,5 +144,6 @@ contract BaseTest is Test {
         omnicatMock1.approve(address(omniNFTA), 100e25);
         omnicatMock2.approve(address(omniNFT), 100e25);
         vm.stopPrank();
+        vm.warp(timestamp);
     }
 }

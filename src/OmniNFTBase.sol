@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import { ONFT721 } from "@LayerZero-Examples/contracts/token/onft721/ONFT721.sol";
 import { IONFT721 } from "@LayerZero-Examples/contracts/token/onft721/interfaces/IONFT721.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
+import { ExcessivelySafeCall } from "@LayerZero-Examples/contracts/libraries/ExcessivelySafeCall.sol";
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { Context } from "@openzeppelin/contracts/utils/Context.sol";
@@ -11,20 +12,23 @@ import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.s
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
+import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 
 
 contract OmniNFTBase is
     ReentrancyGuard,
-    ONFT721
+    ONFT721,
+    Pausable
 {
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
+    using ExcessivelySafeCall for address;
 
     // ===================== Constants ===================== //
-    uint64 public dstGasReserve = 1e6;
+    uint64 public extraGas = 3e4;
+    uint64 public dstGasReserve = 1e6+extraGas;
     string public baseURI;
     uint256 public immutable MINT_COST;
-    uint256 public immutable MAX_TOKENS_PER_MINT;
     uint256 public immutable MAX_MINTS_PER_ACCOUNT;
     uint256 public immutable COLLECTION_SIZE;
 
@@ -34,8 +38,8 @@ contract OmniNFTBase is
     IOmniCat public omnicat;
 
     // ===================== Storage ===================== //
-    uint256 interchainTransactionFees = 0;
-    bool revealed = false;
+    uint256 public interchainTransactionFees = 0;
+    bool public revealed = false;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -50,7 +54,6 @@ contract OmniNFTBase is
         omnicat = _omnicat;
         baseURI = _nftInfo.baseURI;
         MINT_COST = _nftInfo.MINT_COST;
-        MAX_TOKENS_PER_MINT = _nftInfo.MAX_TOKENS_PER_MINT;
         MAX_MINTS_PER_ACCOUNT = _nftInfo.MAX_MINTS_PER_ACCOUNT;
         COLLECTION_SIZE = _nftInfo.COLLECTION_SIZE;
     }
@@ -74,10 +77,26 @@ contract OmniNFTBase is
         }
         require(amount <= interchainTransactionFees, "cannot take that much");
         interchainTransactionFees -= amount;
-        (bool sent, bytes memory data) = payable(msg.sender).call{value: amount}("");
+        (bool sent, ) = payable(msg.sender).call{value: amount}("");
         require(sent, "Failed to send");
     }
 
+
+    function pauseContract()
+        external
+        nonReentrant
+        onlyOwner()
+    {
+        _pause();
+    }
+
+    function unpauseContract()
+        external
+        nonReentrant
+        onlyOwner()
+    {
+        _unpause();
+    }
 
     // ===================== Public Functions ===================== //
 
@@ -93,7 +112,7 @@ contract OmniNFTBase is
         address payable _refundAddress,
         address _zroPaymentAddress,
         bytes memory _adapterParams
-    ) internal override {
+    ) internal override whenNotPaused() {
         // allow 1 by default
         require(_tokenIds.length > 0, "tokenIds[] is empty");
         require(_tokenIds.length == 1 || _tokenIds.length <= dstChainIdToBatchLimit[_dstChainId], "batch size exceeds dst batch limit");
@@ -114,13 +133,29 @@ contract OmniNFTBase is
         if(!revealed){
             return baseURI;
         }
-        else{
-            super.tokenURI(tokenId);
-        }
+        super.tokenURI(tokenId);
     }
 
     // ===================== interval Functions ===================== //
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
+    }
+
+    function _blockingLzReceive(
+      uint16 _srcChainId,
+      bytes memory _srcAddress,
+      uint64 _nonce,
+      bytes memory _payload
+    ) internal virtual override {
+        require(gasleft() >= extraGas);
+        uint256 gasToStoreFailedPayload = gasleft() - extraGas;
+        (bool success, bytes memory reason) = address(this).excessivelySafeCall(
+            gasToStoreFailedPayload,
+            150,
+            abi.encodeWithSelector(this.nonblockingLzReceive.selector, _srcChainId, _srcAddress, _nonce, _payload)
+        );
+        if (!success) {
+          _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, reason);
+        }
     }
 }
