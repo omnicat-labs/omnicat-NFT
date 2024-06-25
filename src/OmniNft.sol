@@ -71,7 +71,7 @@ contract OmniNFT is
             baseChainAddressBytes,
             mintNumber*MINT_COST,
             payload,
-            dstGasReserve * mintNumber,
+            uint64(dstGasReserve * mintNumber),
             false,
             lzCallParams.adapterParams
         );
@@ -104,7 +104,7 @@ contract OmniNFT is
             baseChainAddressBytes,
             mintNumber*MINT_COST,
             payload,
-            dstGasReserve * mintNumber,
+            uint64(dstGasReserve * mintNumber),
             false,
             lzCallParams.adapterParams
         );
@@ -117,7 +117,7 @@ contract OmniNFT is
             require(success, "failed to refund");
         }
 
-        omnicat.sendAndCall{value: bridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, dstGasReserve * mintNumber,, lzCallParams);
+        omnicat.sendAndCall{value: bridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstGasReserve * mintNumber), lzCallParams);
     }
 
     function estimateBurnFees(
