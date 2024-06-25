@@ -190,26 +190,12 @@ contract OmniNFTA is
                 emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
             }
-            uint256[] memory tokenIds = new uint256[](mintNumber);
             for(uint256 i=0;i<mintNumber;){
-                tokenIds[i] = nextTokenIdMint;
+                _mint(userAddress, nextTokenIdMint);
+                nextTokenIdMint++;
                 unchecked {
-                    nextTokenIdMint++;
                     i++;
                 }
-            }
-            console.log("past the for loop");
-            uint nextIndex = _creditTill(_srcChainId, userAddress, 0, tokenIds);
-            console.log("past the credit till");
-            if (nextIndex < tokenIds.length) {
-                // not enough gas to complete transfers, store to be cleared in another tx
-                bytes memory payload = abi.encode(userAddress, tokenIds);
-                console.log("encode worked");
-                bytes32 hashedPayload = keccak256(payload);
-                console.log("hash worked");
-                storedCredits[hashedPayload] = StoredCredit(_srcChainId, userAddress, nextIndex, true);
-                console.log("stored");
-                emit CreditStored(hashedPayload, payload);
             }
         }
     }
