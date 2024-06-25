@@ -32,6 +32,9 @@ contract BaseTest is Test {
     bytes32 public constant DEFAULT_ADMIN_ROLE = 0x0000000000000000000000000000000000000000000000000000000000000000;
     IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
 
+    uint256 dstChainIdToTransferGas = 3e5;
+    uint256 mindstGasExtra = 1e5;
+
     function setUp() public {
         vm.startPrank(admin);
 
@@ -107,11 +110,11 @@ contract BaseTest is Test {
         omniNFTA.setTrustedRemoteAddress(secondChainId, abi.encodePacked(address(omniNFT)));
         omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1e4);
         omniNFTA.setDstChainIdToBatchLimit(secondChainId, 10);
-        omniNFTA.setDstChainIdToTransferGas(secondChainId, 1e5);
+        omniNFTA.setDstChainIdToTransferGas(secondChainId, dstChainIdToTransferGas);
         omniNFT.setTrustedRemoteAddress(firstChainId, abi.encodePacked(address(omniNFTA)));
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1e4);
         omniNFT.setDstChainIdToBatchLimit(firstChainId, 10);
-        omniNFTA.setDstChainIdToTransferGas(secondChainId, 1e5);
+        omniNFT.setDstChainIdToTransferGas(firstChainId, dstChainIdToTransferGas);
 
         vm.deal(address(admin), 1e20);
         (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");

@@ -16,6 +16,7 @@ contract OmniNFT is
 
     // ===================== Constants ===================== //
     BaseChainInfo public BASE_CHAIN_INFO;
+    uint256 public MAX_NFTS_IN_MINT = 10;
 
     // AccessControl roles.
 
@@ -84,7 +85,7 @@ contract OmniNFT is
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external payable nonReentrant() whenNotPaused() {
-        require(mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many in one transaction");
+        require(mintNumber <= MAX_NFTS_IN_MINT, "Too many in one transaction");
         // require(balanceOf(msg.sender) + mintNumber <= MAX_MINTS_PER_ACCOUNT);
         bytes memory payload = abi.encode(msg.sender, mintNumber);
         payload = abi.encodePacked(MessageType.MINT, payload);
