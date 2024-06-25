@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
+import "forge-std/Test.sol";
+
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
 import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
@@ -126,9 +128,9 @@ contract OmniNFTA is
             uint nextIndex = _creditTill(_srcChainId, toAddress, 0, tokenIds);
             if (nextIndex < tokenIds.length) {
                 // not enough gas to complete transfers, store to be cleared in another tx
-                bytes32 hashedPayload = keccak256(_payload);
+                bytes32 hashedPayload = keccak256(payloadWithoutMessage);
                 storedCredits[hashedPayload] = StoredCredit(_srcChainId, toAddress, nextIndex, true);
-                emit CreditStored(hashedPayload, _payload);
+                emit CreditStored(hashedPayload, payloadWithoutMessage);
             }
 
             emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, tokenIds);
@@ -173,11 +175,11 @@ contract OmniNFTA is
 
     // This is called by interchain mints
     function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 _from, uint _amount, bytes calldata _payload) external override {
-        require(msg.sender == address(omnicat));
+        require(msg.sender == address(omnicat), "not omnicat");
 
         address rootCaller = address(uint160(uint256(_from)));
         address trustedRemoteLookupAddress = retrieveTrustedRemote(_srcChainId);
-        require(rootCaller == trustedRemoteLookupAddress);
+        require(rootCaller == trustedRemoteLookupAddress, "not trusted caller");
 
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){
@@ -188,13 +190,26 @@ contract OmniNFTA is
                 emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
             }
-            uint256[] memory tokens = new uint256[](mintNumber);
+            uint256[] memory tokenIds = new uint256[](mintNumber);
             for(uint256 i=0;i<mintNumber;){
-                _mint(userAddress, ++nextTokenIdMint);
-                tokens[i] = nextTokenIdMint;
+                tokenIds[i] = nextTokenIdMint;
                 unchecked {
+                    nextTokenIdMint++;
                     i++;
                 }
+            }
+            console.log("past the for loop");
+            uint nextIndex = _creditTill(_srcChainId, userAddress, 0, tokenIds);
+            console.log("past the credit till");
+            if (nextIndex < tokenIds.length) {
+                // not enough gas to complete transfers, store to be cleared in another tx
+                bytes memory payload = abi.encode(userAddress, tokenIds);
+                console.log("encode worked");
+                bytes32 hashedPayload = keccak256(payload);
+                console.log("hash worked");
+                storedCredits[hashedPayload] = StoredCredit(_srcChainId, userAddress, nextIndex, true);
+                console.log("stored");
+                emit CreditStored(hashedPayload, payload);
             }
         }
     }

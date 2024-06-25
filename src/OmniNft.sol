@@ -71,7 +71,7 @@ contract OmniNFT is
             baseChainAddressBytes,
             mintNumber*MINT_COST,
             payload,
-            uint64(dstGasReserve * mintNumber),
+            uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber),
             false,
             lzCallParams.adapterParams
         );
@@ -98,13 +98,14 @@ contract OmniNFT is
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
         _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber);
+        // _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstGasReserve * mintNumber);
 
         (uint256 bridgeFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
             baseChainAddressBytes,
             mintNumber*MINT_COST,
             payload,
-            uint64(dstGasReserve * mintNumber),
+            uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber),
             false,
             lzCallParams.adapterParams
         );
@@ -117,7 +118,7 @@ contract OmniNFT is
             require(success, "failed to refund");
         }
 
-        omnicat.sendAndCall{value: bridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstGasReserve * mintNumber), lzCallParams);
+        omnicat.sendAndCall{value: bridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber), lzCallParams);
     }
 
     function estimateBurnFees(
@@ -157,7 +158,7 @@ contract OmniNFT is
             adapterParams: _adapterParams
         });
 
-        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID]);
+        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstGasReserve);
 
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
         interchainTransactionFees += omniBridgeFee;
@@ -207,9 +208,9 @@ contract OmniNFT is
         uint nextIndex = _creditTill(_srcChainId, toAddress, 0, tokenIds);
         if (nextIndex < tokenIds.length) {
             // not enough gas to complete transfers, store to be cleared in another tx
-            bytes32 hashedPayload = keccak256(_payload);
+            bytes32 hashedPayload = keccak256(payloadWithoutMessage);
             storedCredits[hashedPayload] = StoredCredit(_srcChainId, toAddress, nextIndex, true);
-            emit CreditStored(hashedPayload, _payload);
+            emit CreditStored(hashedPayload, payloadWithoutMessage);
         }
 
         emit ReceiveFromChain(_srcChainId, _srcAddress, toAddress, tokenIds);

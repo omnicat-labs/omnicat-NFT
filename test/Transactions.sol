@@ -92,6 +92,9 @@ contract testTransactions is BaseTest {
             address(0),
             abi.encodePacked(uint16(1), uint256(10*12e5))
         );
+        vm.assertEq(omniNFTA.ownerOf(0), user1);
+        vm.assertEq(omniNFTA.ownerOf(9), user1);
+        vm.assertEq(omniNFTA.balanceOf(user1), 10);
 
         bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(omniNFTA.dstGasReserve()));
         (uint256 nativeFee, ) = omniNFTA.estimateSendFee(secondChainId, abi.encodePacked(user1), 1, false, adapterParams);
@@ -264,4 +267,5 @@ contract testTransactions is BaseTest {
         vm.expectRevert("minting period not started");
         omniNFTA.mint(10);
     }
+
 }
