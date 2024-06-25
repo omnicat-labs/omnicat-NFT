@@ -13,6 +13,7 @@ import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuar
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 
 contract OmniNFTBase is
@@ -23,6 +24,7 @@ contract OmniNFTBase is
     using SafeERC20 for IOmniCat;
     using SafeCast for uint256;
     using ExcessivelySafeCall for address;
+    using Strings for uint256;
 
     // ===================== Constants ===================== //
     uint64 public extraGas = 3e4;
@@ -39,7 +41,6 @@ contract OmniNFTBase is
 
     // ===================== Storage ===================== //
     uint256 public interchainTransactionFees = 0;
-    bool public revealed = false;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -64,9 +65,8 @@ contract OmniNFTBase is
         dstGasReserve = _dstGasReserve;
     }
 
-    function setBaseUri(string calldata _newBaseURI, bool _revealed) onlyOwner() external {
+    function setBaseUri(string calldata _newBaseURI) onlyOwner() external {
         baseURI = _newBaseURI;
-        revealed = _revealed;
     }
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
@@ -130,10 +130,7 @@ contract OmniNFTBase is
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        if(!revealed){
-            return baseURI;
-        }
-        super.tokenURI(tokenId);
+        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
     }
 
     // ===================== interval Functions ===================== //
