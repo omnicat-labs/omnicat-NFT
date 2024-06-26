@@ -28,13 +28,10 @@ contract OmniNFTBase is
 
     // ===================== Constants ===================== //
     uint64 public extraGas = 3e4;
-    uint64 public dstGasReserve = 1e6+extraGas;
     string public baseURI;
     uint256 public immutable MINT_COST;
     uint256 public immutable MAX_MINTS_PER_ACCOUNT;
     uint256 public immutable COLLECTION_SIZE;
-
-    // AccessControl roles.
 
     // External contracts.
     IOmniCat public omnicat;
@@ -51,7 +48,6 @@ contract OmniNFTBase is
     )
         ONFT721(_nftInfo.name, _nftInfo.symbol, _minGasToTransfer, _lzEndpoint)
     {
-        // Grant admin role.
         omnicat = _omnicat;
         baseURI = _nftInfo.baseURI;
         MINT_COST = _nftInfo.MINT_COST;
@@ -60,11 +56,6 @@ contract OmniNFTBase is
     }
 
     // ===================== Admin-Only External Functions (Cold) ===================== //
-
-    function setDstGasReserve(uint64 _dstGasReserve) onlyOwner() external {
-        dstGasReserve = _dstGasReserve;
-    }
-
     function setBaseUri(string calldata _newBaseURI) onlyOwner() external {
         baseURI = _newBaseURI;
     }
@@ -75,10 +66,10 @@ contract OmniNFTBase is
         if(amount == 0){
             amount = interchainTransactionFees;
         }
-        require(amount <= interchainTransactionFees, "cannot take that much");
+        require(amount <= interchainTransactionFees);
         interchainTransactionFees -= amount;
         (bool sent, ) = payable(msg.sender).call{value: amount}("");
-        require(sent, "Failed to send");
+        require(sent);
     }
 
 
@@ -113,7 +104,6 @@ contract OmniNFTBase is
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) internal override whenNotPaused() {
-        // allow 1 by default
         require(_tokenIds.length > 0, "tokenIds[] is empty");
         require(_tokenIds.length == 1 || _tokenIds.length <= dstChainIdToBatchLimit[_dstChainId], "batch size exceeds dst batch limit");
 
@@ -130,14 +120,10 @@ contract OmniNFTBase is
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        return bytes(baseURI).length > 0 ? string(abi.encodePacked(baseURI, tokenId.toString())) : "";
+        return string(abi.encodePacked(baseURI, tokenId.toString()));
     }
 
     // ===================== interval Functions ===================== //
-    function _baseURI() internal view override returns (string memory) {
-        return baseURI;
-    }
-
     function _blockingLzReceive(
       uint16 _srcChainId,
       bytes memory _srcAddress,

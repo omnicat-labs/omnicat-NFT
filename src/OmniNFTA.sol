@@ -45,10 +45,6 @@ contract OmniNFTA is
     IBlast public constant BLAST = IBlast(0x4300000000000000000000000000000000000002);
     uint256 public immutable mintStartTimestamp;
 
-    // AccessControl roles.
-
-    // External contracts.
-
     // ===================== Storage ===================== //
     uint256 public nextTokenIdMint = 0;
     mapping (address userAddress => mapping(uint16 chainId => uint256 refundAmount)) public omniUserRefund;
@@ -70,10 +66,6 @@ contract OmniNFTA is
         BLAST.configureGovernor(msg.sender);
         mintStartTimestamp = _mintStartTimestamp;
     }
-
-    // ===================== Admin-Only External Functions (Cold) ===================== //
-
-    // ===================== Admin-Only External Functions (Hot) ===================== //
 
     // ===================== Public Functions ===================== //
 
@@ -109,7 +101,6 @@ contract OmniNFTA is
         uint64, /*_nonce*/
         bytes memory _payload
     ) internal override {
-        // decode and load the toAddress
         bytes memory payloadWithoutMessage;
         assembly {
             payloadWithoutMessage := add(_payload,1)
@@ -127,7 +118,6 @@ contract OmniNFTA is
 
             uint nextIndex = _creditTill(_srcChainId, toAddress, 0, tokenIds);
             if (nextIndex < tokenIds.length) {
-                // not enough gas to complete transfers, store to be cleared in another tx
                 bytes32 hashedPayload = keccak256(payloadWithoutMessage);
                 storedCredits[hashedPayload] = StoredCredit(_srcChainId, toAddress, nextIndex, true);
                 emit CreditStored(hashedPayload, payloadWithoutMessage);
@@ -141,7 +131,6 @@ contract OmniNFTA is
                 return;
             }
             if(nextTokenIdMint < COLLECTION_SIZE){
-                // If minting not allowed, store a NFT refund for the user.
                 bytes memory payload = abi.encode(abi.encodePacked(userAddress), _toSingletonArray(tokenId));
                 payload = abi.encodePacked(MessageType.TRANSFER, payload);
                 bytes32 hashedPayload = keccak256(payload);
@@ -153,7 +142,7 @@ contract OmniNFTA is
             ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
                 refundAddress: payable(address(this)),
                 zroPaymentAddress: address(0),
-                adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+                adapterParams: abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas[_srcChainId]))
             });
             bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
             (uint256 nativeFee, ) = omnicat.estimateSendFee(
@@ -173,7 +162,6 @@ contract OmniNFTA is
         }
     }
 
-    // This is called by interchain mints
     function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 _from, uint _amount, bytes calldata _payload) external override {
         require(msg.sender == address(omnicat), "not omnicat");
 
@@ -185,7 +173,6 @@ contract OmniNFTA is
         if(messageType == MessageType.MINT){
             (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
             if((_amount < mintNumber*MINT_COST) || (mintStartTimestamp > block.timestamp) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) || (UserMintedNumber[msg.sender] + mintNumber > MAX_MINTS_PER_ACCOUNT)){
-                // create refund for user
                 omniUserRefund[userAddress][_srcChainId] += _amount;
                 emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
@@ -207,7 +194,7 @@ contract OmniNFTA is
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(address(this)),
             zroPaymentAddress: address(0),
-            adapterParams: abi.encodePacked(uint16(1), uint256(dstGasReserve))
+            adapterParams: abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas[chainID]))
         });
         bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
         uint256 refundAmount = omniUserRefund[userAddress][chainID];
@@ -233,7 +220,7 @@ contract OmniNFTA is
         NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
         require(refundObject.userAddress != address(0), "not a valid refund object");
 
-        bytes memory adapterParams = abi.encodePacked(uint16(1), refundObject.tokens.length*uint256(dstGasReserve));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), refundObject.tokens.length*uint256(dstChainIdToTransferGas[refundObject.chainID]));
         bytes memory payload = abi.encode(abi.encodePacked(refundObject.userAddress), refundObject.tokens);
         payload = abi.encodePacked(MessageType.TRANSFER, payload);
 

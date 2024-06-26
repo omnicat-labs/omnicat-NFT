@@ -83,7 +83,7 @@ contract BaseTest is Test {
                 name: "omniNFT",
                 symbol: "onft"
             }),
-            1e5,
+            1e4,
             address(layerZeroEndpointMock1),
             timestamp
         );
@@ -102,7 +102,7 @@ contract BaseTest is Test {
                 name: "omniNFT",
                 symbol: "onft"
             }),
-            1e5,
+            1e4,
             address(layerZeroEndpointMock2),
             5e16
         );
