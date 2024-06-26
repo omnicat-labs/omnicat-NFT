@@ -60,13 +60,13 @@ contract testTransactions is BaseTest {
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         omniNFT.burn{value: burnFee}(
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         vm.assertEq(omniNFT.balanceOf(user2), 4);
         vm.assertEq(omniNFTA.balanceOf(user2), 0);
@@ -96,14 +96,14 @@ contract testTransactions is BaseTest {
         vm.assertEq(omniNFTA.ownerOf(9), user1);
         vm.assertEq(omniNFTA.balanceOf(user1), 10);
 
-        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(omniNFTA.dstGasReserve()));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), dstChainIdToTransferGas+mindstGasExtra);
         (uint256 nativeFee, ) = omniNFTA.estimateSendFee(secondChainId, abi.encodePacked(user1), 1, false, adapterParams);
         omniNFTA.sendFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user1), 1, payable(user1), address(0), adapterParams);
         vm.assertEq(omniNFT.balanceOf(user1), 1);
         vm.assertEq(omniNFT.ownerOf(1), user1);
         vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + 10*omniNFTA.MINT_COST());
 
-        adapterParams = abi.encodePacked(uint16(1), uint256(omniNFTA.dstGasReserve()));
+        adapterParams = abi.encodePacked(uint16(1), dstChainIdToTransferGas+mindstGasExtra);
         (nativeFee, ) = omniNFT.estimateSendFee(firstChainId, abi.encodePacked(user2), 1, false, adapterParams);
         omniNFT.sendFrom{value: 2*nativeFee}(user1, firstChainId, abi.encodePacked(user2), 1, payable(user1), address(0), adapterParams);
         vm.assertEq(omniNFTA.balanceOf(user2), 1);
@@ -141,13 +141,13 @@ contract testTransactions is BaseTest {
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         omniNFT.burn{value: burnFee}(
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         vm.assertEq(omniNFT.balanceOf(user1), 4);
         vm.assertEq(omnicatMock1.balanceOf(address(omniNFTA)), prevBalance + 5*omniNFTA.MINT_COST());
@@ -177,13 +177,13 @@ contract testTransactions is BaseTest {
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         omniNFT.burn{value: burnFee}(
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         vm.assertEq(omniNFT.balanceOf(user1), 4);
         vm.assertEq(omniNFTA.balanceOf(user1), 5);
@@ -223,13 +223,13 @@ contract testTransactions is BaseTest {
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         omniNFT.burn{value: burnFee}(
             1,
             payable(user1),
             address(0),
-            abi.encodePacked(uint16(1), uint256(12e5))
+            abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas+mindstGasExtra))
         );
         vm.assertEq(omniNFT.balanceOf(user1), 4);
         vm.stopPrank();
@@ -266,6 +266,33 @@ contract testTransactions is BaseTest {
         vm.startPrank(user1);
         vm.expectRevert("minting period not started");
         omniNFTA.mint(10);
+    }
+
+    function testClearCredits() public {
+        vm.startPrank(user1);
+        omniNFTA.mint(10);
+        vm.stopPrank();
+
+        vm.startPrank(admin);
+        omniNFTA.setDstChainIdToTransferGas(secondChainId, 1);
+        omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1);
+        omniNFT.setDstChainIdToTransferGas(firstChainId, 1);
+        omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1);
+        vm.stopPrank();
+
+        vm.startPrank(user1);
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(1e5+9e4+9e3));
+        uint256[] memory tokens = new uint256[](5);
+        for(uint256 i=0;i<5;i++){
+            tokens[i] = i;
+        }
+        (uint256 nativeFee, ) = omniNFTA.estimateSendBatchFee(secondChainId, abi.encodePacked(user1), tokens, false, adapterParams);
+        omniNFTA.sendBatchFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user1), tokens, payable(user1), address(0), adapterParams);
+        vm.assertEq(omniNFT.balanceOf(user1),0);
+
+        bytes memory payload = abi.encode(user1, tokens);
+        omniNFT.clearCredits(payload);
+        vm.assertEq(omniNFT.balanceOf(user1),5);
     }
 
 }
