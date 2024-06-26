@@ -296,13 +296,13 @@ contract testTransactions is BaseTest {
         omniNFT.clearCredits(payload);
         vm.assertEq(omniNFT.balanceOf(user1),3);
 
-        (nativeFee, ) = omniNFT.estimateSendBatchFee(secondChainId, abi.encodePacked(user1), tokens, false, adapterParams);
-        omniNFT.sendBatchFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user1), tokens, payable(user1), address(0), adapterParams);
+        (nativeFee, ) = omniNFT.estimateSendBatchFee(firstChainId, abi.encodePacked(user1), tokens, false, adapterParams);
+        omniNFT.sendBatchFrom{value: 2*nativeFee}(user1, firstChainId, abi.encodePacked(user1), tokens, payable(user1), address(0), adapterParams);
         vm.assertEq(omniNFTA.balanceOf(user1),7);
 
         payload = abi.encode(user1, tokens);
         omniNFTA.clearCredits(payload);
-        vm.assertEq(omniNFT.balanceOf(user1),10);
+        vm.assertEq(omniNFTA.balanceOf(user1),10);
     }
 
 }
