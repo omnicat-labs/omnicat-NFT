@@ -99,10 +99,7 @@ contract OmniNFTA is
         uint64, /*_nonce*/
         bytes memory _payload
     ) internal override {
-        bytes memory payloadWithoutMessage;
-        assembly {
-            payloadWithoutMessage := add(_payload,1)
-        }
+        bytes memory payloadWithoutMessage = this.slice(_payload);
 
         uint8 value = uint8(_payload[0]);
         MessageType messageType = MessageType(value);

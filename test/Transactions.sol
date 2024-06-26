@@ -268,23 +268,23 @@ contract testTransactions is BaseTest {
         vm.startPrank(admin);
         omniNFTA.setDstChainIdToTransferGas(secondChainId, 1);
         omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1);
-        omniNFTA.setMinGasToTransferAndStore(0.9e6);
+        omniNFTA.setMinGasToTransferAndStore(1e5);
         omniNFT.setDstChainIdToTransferGas(firstChainId, 1);
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1);
-        omniNFT.setMinGasToTransferAndStore(0.9e6);
+        omniNFT.setMinGasToTransferAndStore(1e5);
         vm.stopPrank();
 
         vm.startPrank(user1);
-        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(1e6));//100000 + 90000 + 9000 = 199000
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(1.1e5));//100000 + 90000 + 9000 = 199000
         uint256[] memory tokens = new uint256[](3);
         for(uint256 i=0;i<3;i++){
             tokens[i] = i;
         }
         (uint256 nativeFee, ) = omniNFTA.estimateSendBatchFee(secondChainId, abi.encodePacked(user1), tokens, false, adapterParams);
         omniNFTA.sendBatchFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user1), tokens, payable(user1), address(0), adapterParams);
-        vm.assertEq(omniNFT.balanceOf(user1),2);
+        vm.assertEq(omniNFT.balanceOf(user1),0);
 
-        bytes memory payload = abi.encode(user1, tokens);
+        bytes memory payload = abi.encode(abi.encodePacked(user1), tokens);
         omniNFT.clearCredits(payload);
         vm.assertEq(omniNFT.balanceOf(user1),3);
 
@@ -292,7 +292,7 @@ contract testTransactions is BaseTest {
         omniNFT.sendBatchFrom{value: 2*nativeFee}(user1, firstChainId, abi.encodePacked(user1), tokens, payable(user1), address(0), adapterParams);
         vm.assertEq(omniNFTA.balanceOf(user1),7);
 
-        payload = abi.encode(user1, tokens);
+        payload = abi.encode(abi.encodePacked(user1), tokens);
         omniNFTA.clearCredits(payload);
         vm.assertEq(omniNFTA.balanceOf(user1),10);
     }

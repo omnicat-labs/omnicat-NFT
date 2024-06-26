@@ -141,4 +141,9 @@ contract OmniNFTBase is
           _storeFailedMessage(_srcChainId, _srcAddress, _nonce, _payload, reason);
         }
     }
+
+    function slice(bytes calldata payload) public pure returns(bytes memory) {
+        bytes memory payloadWithoutMessage = payload[1:];
+        return payloadWithoutMessage;
+    }
 }
