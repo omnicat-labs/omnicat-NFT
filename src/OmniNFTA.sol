@@ -175,6 +175,9 @@ contract OmniNFTA is
                 emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;
             }
+
+            UserMintedNumber[userAddress] += mintNumber;
+
             for(uint256 i=0;i<mintNumber;){
                 _mint(userAddress, nextTokenIdMint);
                 nextTokenIdMint++;
