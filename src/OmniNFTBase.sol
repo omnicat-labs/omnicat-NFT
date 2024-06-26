@@ -2,16 +2,12 @@
 pragma solidity 0.8.19;
 
 import { ONFT721 } from "@LayerZero-Examples/contracts/token/onft721/ONFT721.sol";
-import { IONFT721 } from "@LayerZero-Examples/contracts/token/onft721/interfaces/IONFT721.sol";
-import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import { ExcessivelySafeCall } from "@LayerZero-Examples/contracts/libraries/ExcessivelySafeCall.sol";
 import { IOmniCat } from "./interfaces/IOmniCat.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ReentrancyGuard } from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import { BaseChainInfo, MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
+import { MessageType, NftInfo } from "./utils/OmniNftStructs.sol";
 import { Pausable } from "@openzeppelin/contracts/security/Pausable.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -27,14 +23,14 @@ contract OmniNFTBase is
     using Strings for uint256;
 
     // ===================== Constants ===================== //
-    uint64 public extraGas = 3e4;
+    uint64 public constant extraGas = 3e4;
     string public baseURI;
     uint256 public immutable MINT_COST;
     uint256 public immutable MAX_MINTS_PER_ACCOUNT;
     uint256 public immutable COLLECTION_SIZE;
 
     // External contracts.
-    IOmniCat public omnicat;
+    IOmniCat public immutable omnicat;
 
     // ===================== Storage ===================== //
     uint256 public interchainTransactionFees = 0;
@@ -109,7 +105,7 @@ contract OmniNFTBase is
         address _zroPaymentAddress,
         bytes memory _adapterParams
     ) internal override whenNotPaused() {
-        require(_tokenIds.length > 0, "tokenIds[] is empty");
+        require(_tokenIds.length > 0);
         require(_tokenIds.length == 1 || _tokenIds.length <= dstChainIdToBatchLimit[_dstChainId], "batch size exceeds dst batch limit");
 
         for (uint i = 0; i < _tokenIds.length; i++) {

@@ -68,9 +68,9 @@ contract OmniNFTA is
     // ===================== Public Functions ===================== //
 
     function mint(uint256 mintNumber) external nonReentrant() whenNotPaused() {
-        require(UserMintedNumber[msg.sender] + mintNumber <= MAX_MINTS_PER_ACCOUNT, "Too many");
-        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE, "collection size exceeded");
-        require(mintStartTimestamp <= block.timestamp, "minting period not started");
+        require(UserMintedNumber[msg.sender] + mintNumber <= MAX_MINTS_PER_ACCOUNT);
+        require(nextTokenIdMint + mintNumber <= COLLECTION_SIZE);
+        require(mintStartTimestamp <= block.timestamp);
 
         omnicat.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
         UserMintedNumber[msg.sender] += mintNumber;
@@ -87,8 +87,8 @@ contract OmniNFTA is
     }
 
     function burn(uint256 tokenId) external nonReentrant() whenNotPaused() {
-        require(_ownerOf(tokenId) == msg.sender, "not owner");
-        require(nextTokenIdMint >= COLLECTION_SIZE, "mint not completed yet");
+        require(_ownerOf(tokenId) == msg.sender);
+        require(nextTokenIdMint >= COLLECTION_SIZE);
         _burn(tokenId);
         omnicat.transfer(msg.sender, MINT_COST);
     }
@@ -159,11 +159,11 @@ contract OmniNFTA is
     }
 
     function onOFTReceived(uint16 _srcChainId, bytes calldata , uint64 , bytes32 _from, uint _amount, bytes calldata _payload) external override {
-        require(msg.sender == address(omnicat), "not omnicat");
+        require(msg.sender == address(omnicat));
 
         address rootCaller = address(uint160(uint256(_from)));
         address trustedRemoteLookupAddress = retrieveTrustedRemote(_srcChainId);
-        require(rootCaller == trustedRemoteLookupAddress, "not trusted caller");
+        require(rootCaller == trustedRemoteLookupAddress);
 
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){

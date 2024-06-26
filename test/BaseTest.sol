@@ -34,6 +34,7 @@ contract BaseTest is Test {
 
     uint256 dstChainIdToTransferGas = 3e5;
     uint256 mindstGasExtra = 1e5;
+    uint256 mindstGasLookupOmni = 2e5;
 
     function setUp() public {
         vm.startPrank(admin);
@@ -111,13 +112,13 @@ contract BaseTest is Test {
         omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1e4);
         omniNFTA.setDstChainIdToBatchLimit(secondChainId, 10);
         omniNFTA.setDstChainIdToTransferGas(secondChainId, dstChainIdToTransferGas);
-        omniNFTA.setMinDstGasLookupOmnicat(secondChainId, 2e5);
+        omniNFTA.setMinDstGasLookupOmnicat(secondChainId, mindstGasLookupOmni);
 
         omniNFT.setTrustedRemoteAddress(firstChainId, abi.encodePacked(address(omniNFTA)));
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1e4);
         omniNFT.setDstChainIdToBatchLimit(firstChainId, 10);
         omniNFT.setDstChainIdToTransferGas(firstChainId, dstChainIdToTransferGas);
-        omniNFT.setMinDstGasLookupOmnicat(firstChainId, 2e5);
+        omniNFT.setMinDstGasLookupOmnicat(firstChainId, mindstGasLookupOmni);
 
         vm.deal(address(admin), 1e20);
         (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");

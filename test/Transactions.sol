@@ -47,7 +47,7 @@ contract testTransactions is BaseTest {
         for(uint256 i=0;i<5;i++){
             tokens[i] = i+1;
         }
-        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni));
         (uint256 nativeFee, ) = omniNFTA.estimateSendBatchFee(secondChainId, abi.encodePacked(user2), tokens, false, adapterParams);
         omniNFTA.sendBatchFrom{value: 2*nativeFee}(user1, secondChainId, abi.encodePacked(user2), tokens, payable(user1), address(0), adapterParams);
         vm.assertEq(omniNFT.balanceOf(user2), 5);
@@ -82,13 +82,13 @@ contract testTransactions is BaseTest {
             10,
             payable(user1),
             user1,
-            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra))
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
         );
         omniNFT.mint{value: mintFee}(
             10,
             payable(user1),
             user1,
-            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra))
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
         );
         vm.assertEq(omniNFTA.ownerOf(0), user1);
         vm.assertEq(omniNFTA.ownerOf(9), user1);
@@ -127,7 +127,7 @@ contract testTransactions is BaseTest {
         uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
         omniNFTA.mint(5);
         uint256[] memory tokens = new uint256[](5);
-        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni));
         for(uint256 i=0;i<5;i++){
             tokens[i] = i;
         }
@@ -204,7 +204,7 @@ contract testTransactions is BaseTest {
         uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
 
         omniNFTA.mint(5);
-        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni));
         uint256[] memory tokens = new uint256[](5);
         for(uint256 i=0;i<5;i++){
             tokens[i] = i;
@@ -241,7 +241,7 @@ contract testTransactions is BaseTest {
         vm.startPrank(user1);
         prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
         omniNFTA.mint(5);
-        adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra));
+        adapterParams = abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni));
         tokens = new uint256[](5);
         for(uint256 i=0;i<5;i++){
             tokens[i] = i+5;
@@ -256,7 +256,7 @@ contract testTransactions is BaseTest {
     function testMintTimestamp() public {
         vm.warp(0);
         vm.startPrank(user1);
-        vm.expectRevert("minting period not started");
+        vm.expectRevert();
         omniNFTA.mint(10);
     }
 
@@ -269,9 +269,12 @@ contract testTransactions is BaseTest {
         omniNFTA.setDstChainIdToTransferGas(secondChainId, 1);
         omniNFTA.setMinDstGas(secondChainId, omniNFTA.FUNCTION_TYPE_SEND(), 1);
         omniNFTA.setMinGasToTransferAndStore(1e5);
+        omniNFTA.setMinDstGasLookupOmnicat(secondChainId, 1);
+
         omniNFT.setDstChainIdToTransferGas(firstChainId, 1);
         omniNFT.setMinDstGas(firstChainId, omniNFT.FUNCTION_TYPE_SEND(), 1);
         omniNFT.setMinGasToTransferAndStore(1e5);
+        omniNFT.setMinDstGasLookupOmnicat(firstChainId, 1);
         vm.stopPrank();
 
         vm.startPrank(user1);

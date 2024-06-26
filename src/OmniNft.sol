@@ -16,7 +16,7 @@ contract OmniNFT is
 
     // ===================== Constants ===================== //
     BaseChainInfo public BASE_CHAIN_INFO;
-    uint256 public MAX_NFTS_IN_MINT = 10;
+    uint256 public constant MAX_NFTS_IN_MINT = 10;
 
     // ===================== Storage ===================== //
     uint256 public omniBridgeFee;
@@ -91,7 +91,7 @@ contract OmniNFT is
 
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
-        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] + minDstGasLookupOmnicat[BASE_CHAIN_INFO.BASE_CHAIN_ID]);
+        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber + minDstGasLookupOmnicat[BASE_CHAIN_INFO.BASE_CHAIN_ID]);
 
         (uint256 bridgeFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
