@@ -105,7 +105,7 @@ contract OmniNFT is
 
         uint256 remainder = msg.value - (bridgeFee);
         if(remainder > 0){
-            bool success = payable(msg.sender).send(remainder);
+            (bool success, ) = payable(msg.sender).call{value:remainder}("");
             require(success, "failed to refund");
         }
 
