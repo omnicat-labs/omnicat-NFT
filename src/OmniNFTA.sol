@@ -221,7 +221,7 @@ contract OmniNFTA is
         NFTRefund memory refundObject = NFTUserRefund[hashedPayload];
         require(refundObject.userAddress != address(0), "not a valid refund object");
 
-        bytes memory adapterParams = abi.encodePacked(uint16(1), refundObject.tokens.length*uint256(dstChainIdToTransferGas[refundObject.chainID]));
+        bytes memory adapterParams = abi.encodePacked(uint16(1), dstChainIdToTransferGas[refundObject.chainID]);
         bytes memory payload = abi.encode(abi.encodePacked(refundObject.userAddress), refundObject.tokens);
         payload = abi.encodePacked(MessageType.TRANSFER, payload);
 
