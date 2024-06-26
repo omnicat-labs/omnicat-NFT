@@ -47,7 +47,6 @@ contract OmniNFT is
     function estimateMintFees(
         uint256 mintNumber,
         address payable _refundAddress,
-        address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external view returns (uint256) {
         bytes memory payload = abi.encode(msg.sender, 1);
@@ -55,7 +54,7 @@ contract OmniNFT is
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: _refundAddress,
-            zroPaymentAddress: _zroPaymentAddress,
+            zroPaymentAddress: address(0),
             adapterParams: _adapterParams
         });
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
@@ -75,7 +74,6 @@ contract OmniNFT is
     function mint(
         uint256 mintNumber,
         address payable _refundAddress,
-        address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external payable nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_NFTS_IN_MINT, "Too many in one transaction");
@@ -85,7 +83,7 @@ contract OmniNFT is
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: _refundAddress,
-            zroPaymentAddress: _zroPaymentAddress,
+            zroPaymentAddress: address(0),
             adapterParams: _adapterParams
         });
 
@@ -117,7 +115,6 @@ contract OmniNFT is
     function estimateBurnFees(
         uint256 tokenId,
         address payable _refundAddress,
-        address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external view returns (uint256) {
         bytes memory payload = abi.encode(msg.sender, tokenId);
@@ -125,7 +122,7 @@ contract OmniNFT is
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: _refundAddress,
-            zroPaymentAddress: _zroPaymentAddress,
+            zroPaymentAddress: address(0),
             adapterParams: _adapterParams
         });
 
@@ -137,7 +134,6 @@ contract OmniNFT is
     function burn(
         uint256 tokenId,
         address payable _refundAddress,
-        address _zroPaymentAddress,
         bytes memory _adapterParams
     ) external payable nonReentrant() whenNotPaused() {
         require(_ownerOf(tokenId) == msg.sender, "not owner");
@@ -147,7 +143,7 @@ contract OmniNFT is
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: _refundAddress,
-            zroPaymentAddress: _zroPaymentAddress,
+            zroPaymentAddress: address(0),
             adapterParams: _adapterParams
         });
 
