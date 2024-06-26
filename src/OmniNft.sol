@@ -47,9 +47,10 @@ contract OmniNFT is
     function estimateMintFees(
         uint256 mintNumber,
         address payable _refundAddress,
+        address nftRecipient,
         bytes memory _adapterParams
     ) external view returns (uint256) {
-        bytes memory payload = abi.encode(msg.sender, 1);
+        bytes memory payload = abi.encode(nftRecipient, 1);
         payload = abi.encodePacked(MessageType.MINT, payload);
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
@@ -74,11 +75,12 @@ contract OmniNFT is
     function mint(
         uint256 mintNumber,
         address payable _refundAddress,
+        address nftRecipient,
         bytes memory _adapterParams
     ) external payable nonReentrant() whenNotPaused() {
         require(mintNumber <= MAX_NFTS_IN_MINT, "Too many in one transaction");
 
-        bytes memory payload = abi.encode(msg.sender, mintNumber);
+        bytes memory payload = abi.encode(nftRecipient, mintNumber);
         payload = abi.encodePacked(MessageType.MINT, payload);
 
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({

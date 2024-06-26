@@ -81,11 +81,13 @@ contract testTransactions is BaseTest {
         uint256 mintFee = omniNFT.estimateMintFees(
             10,
             payable(user1),
+            user1,
             abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra))
         );
         omniNFT.mint{value: mintFee}(
             10,
             payable(user1),
+            user1,
             abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra))
         );
         vm.assertEq(omniNFTA.ownerOf(0), user1);
