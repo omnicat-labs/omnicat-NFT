@@ -134,10 +134,11 @@ contract OmniNFTA is
                 return;
             }
             _burn(tokenId);
+
             ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
                 refundAddress: payable(address(this)),
                 zroPaymentAddress: address(0),
-                adapterParams: abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas[_srcChainId]))
+                adapterParams: abi.encodePacked(uint16(1), uint256(minDstGasLookupOmnicat[_srcChainId]))
             });
             bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
             (uint256 nativeFee, ) = omnicat.estimateSendFee(
@@ -192,7 +193,7 @@ contract OmniNFTA is
         ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
             refundAddress: payable(address(this)),
             zroPaymentAddress: address(0),
-            adapterParams: abi.encodePacked(uint16(1), uint256(dstChainIdToTransferGas[chainID]))
+            adapterParams: abi.encodePacked(uint16(1), minDstGasLookupOmnicat[chainID])
         });
         bytes32 userAddressBytes = bytes32(uint256(uint160(userAddress)));
         uint256 refundAmount = omniUserRefund[userAddress][chainID];

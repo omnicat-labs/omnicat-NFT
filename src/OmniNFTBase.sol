@@ -38,6 +38,7 @@ contract OmniNFTBase is
 
     // ===================== Storage ===================== //
     uint256 public interchainTransactionFees = 0;
+    mapping(uint16 => uint) public minDstGasLookupOmnicat;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -70,6 +71,10 @@ contract OmniNFTBase is
         interchainTransactionFees -= amount;
         (bool sent, ) = payable(msg.sender).call{value: amount}("");
         require(sent);
+    }
+
+    function setMinDstGasLookupOmnicat(uint16 chainId, uint256 value) onlyOwner() external {
+        minDstGasLookupOmnicat[chainId] = value;
     }
 
 
