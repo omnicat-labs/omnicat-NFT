@@ -119,11 +119,11 @@ contract OmniNFTBase is
         emit SendToChain(_dstChainId, _from, _toAddress, _tokenIds);
     }
 
-    function tokenURI(uint256 tokenId) public view override returns (string memory) {
-        return string(abi.encodePacked(baseURI, tokenId.toString()));
+    // ===================== interval Functions ===================== //
+    function _baseURI() internal view override returns (string memory) {
+        return baseURI;
     }
 
-    // ===================== interval Functions ===================== //
     function _blockingLzReceive(
       uint16 _srcChainId,
       bytes memory _srcAddress,
