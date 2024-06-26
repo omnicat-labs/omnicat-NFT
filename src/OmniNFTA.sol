@@ -176,7 +176,7 @@ contract OmniNFTA is
             UserMintedNumber[userAddress] += mintNumber;
 
             for(uint256 i=0;i<mintNumber;){
-                _mint(userAddress, nextTokenIdMint);
+                _safeMint(userAddress, nextTokenIdMint);
                 nextTokenIdMint++;
                 unchecked {
                     i++;
