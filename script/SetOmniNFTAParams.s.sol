@@ -24,9 +24,18 @@ contract ConfigureOmniNFTA is ParamSetChains {
                 continue;
             }
             omniNFTA.setTrustedRemoteAddress(chainIds[i], abi.encodePacked(address(chainIdToContract[chainIds[i]])) );
-            omniNFTA.setMinDstGas(chainIds[i], uint16(0), 1e5);
-            omniNFTA.setMinDstGas(chainIds[i], uint16(1), 1e5);
+            omniNFTA.setMinDstGas(chainIds[i], uint16(0), 150000);
+            omniNFTA.setMinDstGas(chainIds[i], uint16(1), 150000);
             omniNFTA.setDstChainIdToBatchLimit(chainIds[i], 10);
+            omniNFTA.setDstChainIdToTransferGas(chainIds[i], DST_CHAIN_ID_TO_TRANSFER_GAS);
+            uint256 minDstGasLookupOmnicat;
+            if(chainIds[i] == ARBITRUM_CHAIN_ID){
+                minDstGasLookupOmnicat = ARBITRUM_OMNI_MIN_DST_GAS;
+            }
+            else{
+                minDstGasLookupOmnicat = DEFAULT_OMNI_MIN_DST_GAS;
+            }
+            omniNFTA.setMinDstGasLookupOmnicat(chainIds[i], minDstGasLookupOmnicat);
         }
 
         vm.stopBroadcast();

@@ -21,6 +21,7 @@ contract DeployOmniNFT is Script {
         IOmniCat omnicat = IOmniCat(vm.envAddress("OMNICAT_ADDRESS"));
         address omniNFTA = vm.envAddress("OMNI_NFT_A");
         uint16 baseChainId = uint16(vm.envUint("BASE_CHAIN_ID"));
+        uint16 OMNI_BRIDGE_FEE = uint16(vm.envUint("OMNI_BRIDGE_FEE"));
 
 
         // uint256 FEE_PERCENTAGE = 10;
@@ -44,7 +45,7 @@ contract DeployOmniNFT is Script {
             }),
             1e4,
             address(layerZeroEndpoint),
-            5e16
+            OMNI_BRIDGE_FEE
         );
 
         // THIS NEEDS TO BE CALLED EVENTUALLY
