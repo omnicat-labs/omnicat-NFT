@@ -20,6 +20,7 @@ contract OmniNFT is
 
     // ===================== Storage ===================== //
     uint256 public omniBridgeFee;
+    uint256 public dstBurnNftGas;
 
     // ===================== Constructor ===================== //
     constructor(
@@ -40,6 +41,10 @@ contract OmniNFT is
 
     function setOmniBridgeFee(uint256 _omniBridgeFee) public onlyOwner() {
         omniBridgeFee = _omniBridgeFee;
+    }
+
+    function setDstBurnNftGas(uint256 _dstBurnNftGas) public onlyOwner() {
+        dstBurnNftGas = _dstBurnNftGas;
     }
 
     // ===================== Public Functions ===================== //
@@ -91,7 +96,7 @@ contract OmniNFT is
 
         bytes32 baseChainAddressBytes = bytes32(uint256(uint160(BASE_CHAIN_INFO.BASE_CHAIN_ADDRESS)));
 
-        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber + minDstGasLookupOmnicat[BASE_CHAIN_INFO.BASE_CHAIN_ID]);
+        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber);
 
         (uint256 bridgeFee, ) = omnicat.estimateSendAndCallFee(
             BASE_CHAIN_INFO.BASE_CHAIN_ID,
@@ -149,7 +154,7 @@ contract OmniNFT is
             adapterParams: _adapterParams
         });
 
-        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID]);
+        _checkGasLimit(BASE_CHAIN_INFO.BASE_CHAIN_ID, FUNCTION_TYPE_SEND, _adapterParams, dstBurnNftGas);
 
         (uint256 nftBridgeFee, ) = lzEndpoint.estimateFees(BASE_CHAIN_INFO.BASE_CHAIN_ID, address(this), payload, false, lzCallParams.adapterParams);
         interchainTransactionFees += omniBridgeFee;

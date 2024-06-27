@@ -119,6 +119,7 @@ contract BaseTest is Test {
         omniNFT.setDstChainIdToBatchLimit(firstChainId, 10);
         omniNFT.setDstChainIdToTransferGas(firstChainId, dstChainIdToTransferGas);
         omniNFT.setMinDstGasLookupOmnicat(firstChainId, mindstGasLookupOmni);
+        omniNFT.setDstBurnNftGas(dstChainIdToTransferGas);
 
         vm.deal(address(admin), 1e20);
         (bool sent, bytes memory data) = payable(address(omniNFTA)).call{value: 1e20, gas: 1e5}("");
