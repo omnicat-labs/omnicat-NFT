@@ -7,9 +7,11 @@ import { LZEndpointMock } from "@LayerZero-Examples/contracts/lzApp/mocks/LZEndp
 import { OmniCatMock } from "../src/mocks/OmniCatMock.sol";
 import { BaseChainInfo, MessageType } from "../src/utils/OmniNftStructs.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { BaseTest } from "./BaseTest.sol";
+import { MainnetTest } from "./MainnetTest.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IOmniCat } from "../src/interfaces/IOmniCat.sol";
 
-contract testTransactions is BaseTest {
+contract testTransactionsMainnet is MainnetTest {
     event CollectionMinted();
 
     function testNormalMintTransactionBurn() public {
@@ -55,7 +57,7 @@ contract testTransactions is BaseTest {
         vm.stopPrank();
 
         vm.startPrank(user2);
-        uint256 prevBalance = omnicatMock2.balanceOf(user2);
+        uint256 prevBalance = omnicatMockERC20.balanceOf(user2);
         uint256 burnFee = omniNFT.estimateBurnFees(
             1,
             payable(user1),
@@ -70,7 +72,7 @@ contract testTransactions is BaseTest {
         vm.assertEq(omniNFTA.balanceOf(user2), 0);
         vm.expectRevert("ERC721: invalid token ID");
         omniNFTA.ownerOf(1);
-        vm.assertEq(omnicatMock2.balanceOf(user2), prevBalance + omniNFT.MINT_COST());
+        vm.assertEq(omnicatMockERC20.balanceOf(user2), prevBalance + omniNFT.MINT_COST());
         vm.stopPrank();
     }
 
@@ -168,7 +170,7 @@ contract testTransactions is BaseTest {
 
         vm.startPrank(user1);
         omniNFTA.mint(5);
-        prevBalance = omnicatMock2.balanceOf(user1);
+        prevBalance = omnicatMockERC20.balanceOf(user1);
         burnFee = omniNFT.estimateBurnFees(
             1,
             payable(user1),
@@ -183,7 +185,7 @@ contract testTransactions is BaseTest {
         vm.assertEq(omniNFTA.balanceOf(user1), 5);
         vm.expectRevert("ERC721: invalid token ID");
         omniNFTA.ownerOf(1);
-        vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance);
+        vm.assertEq(omnicatMockERC20.balanceOf(user1), prevBalance);
         vm.stopPrank();
 
         vm.startPrank(admin);
@@ -194,7 +196,7 @@ contract testTransactions is BaseTest {
             user1,
             secondChainId
         );
-        vm.assertEq(omnicatMock2.balanceOf(user1), prevBalance + omniNFT.MINT_COST());
+        vm.assertEq(omnicatMockERC20.balanceOf(user1), prevBalance + omniNFT.MINT_COST());
         vm.stopPrank();
     }
 

@@ -9,7 +9,7 @@ import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IBlast } from "../src/interfaces/IBlast.sol";
 
-contract BaseTest is Test {
+contract LimitTest is Test {
     OmniNFTA public omniNFTA;
     OmniNFT public omniNFT;
 
@@ -79,8 +79,8 @@ contract BaseTest is Test {
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_MINTS_PER_ACCOUNT: 50,
-                COLLECTION_SIZE: 10,
+                MAX_MINTS_PER_ACCOUNT: 20,
+                COLLECTION_SIZE: 3405,
                 name: "omniNFT",
                 symbol: "onft"
             }),
@@ -98,8 +98,8 @@ contract BaseTest is Test {
             NftInfo({
                 baseURI: "http://omni.xyz",
                 MINT_COST: 250000e18,
-                MAX_MINTS_PER_ACCOUNT: 50,
-                COLLECTION_SIZE: 10,
+                MAX_MINTS_PER_ACCOUNT: 20,
+                COLLECTION_SIZE: 3405,
                 name: "omniNFT",
                 symbol: "onft"
             }),
@@ -155,5 +155,45 @@ contract BaseTest is Test {
         omnicatMock2.approve(address(omniNFT), 100e25);
         vm.stopPrank();
         vm.warp(timestamp);
+    }
+
+    function testMaxMints() public {
+        vm.startPrank(user1);
+        uint256 prevBalance = omnicatMock1.balanceOf(address(omniNFTA));
+
+        uint256 mintFee = omniNFT.estimateMintFees(
+            10,
+            payable(user1),
+            user1,
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
+        );
+        omniNFT.mint{value: mintFee}(
+            10,
+            payable(user1),
+            user1,
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
+        );
+        omniNFT.mint{value: mintFee}(
+            10,
+            payable(user1),
+            user1,
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
+        );
+        vm.assertEq(omniNFTA.ownerOf(0), user1);
+        vm.assertEq(omniNFTA.ownerOf(19), user1);
+        vm.assertEq(omniNFTA.balanceOf(user1), 20);
+        omniNFT.mint{value: mintFee}(
+            10,
+            payable(user1),
+            user1,
+            abi.encodePacked(uint16(1), uint256(10*dstChainIdToTransferGas+mindstGasExtra+mindstGasLookupOmni))
+        );
+        vm.assertEq(omniNFTA.ownerOf(0), user1);
+        vm.assertEq(omniNFTA.ownerOf(19), user1);
+        vm.assertEq(omniNFTA.balanceOf(user1), 20);
+        vm.assertEq(omniNFTA.omniUserRefund(user1, secondChainId), omniNFTA.MINT_COST()*10);
+        uint256 previousBalance = omnicatMock2.balanceOf(user1);
+        omniNFTA.sendOmniRefund(user1, secondChainId);
+        vm.assertEq(omnicatMock2.balanceOf(user1), previousBalance + omniNFTA.MINT_COST()*10);
     }
 }

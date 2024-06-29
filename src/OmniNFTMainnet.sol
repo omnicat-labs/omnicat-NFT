@@ -7,16 +7,19 @@ import { OmniNFTBase } from "./OmniNftBase.sol";
 import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-contract OmniNFT is
+contract OmniNFTMainnet is
     OmniNFTBase
 {
     using SafeERC20 for IOmniCat;
+    using SafeERC20 for IERC20;
     using SafeCast for uint256;
 
     // ===================== Constants ===================== //
     BaseChainInfo public BASE_CHAIN_INFO;
     uint256 public constant MAX_NFTS_IN_MINT = 10;
+    IERC20 omnicatERC20;
 
     // ===================== Storage ===================== //
     uint256 public omniBridgeFee;
@@ -26,6 +29,7 @@ contract OmniNFT is
     constructor(
         BaseChainInfo memory _baseChainInfo,
         IOmniCat _omnicat,
+        IERC20 _omnicatERC20,
         NftInfo memory _nftInfo,
         uint _minGasToTransfer,
         address _lzEndpoint,
@@ -35,6 +39,7 @@ contract OmniNFT is
     {
         BASE_CHAIN_INFO = _baseChainInfo;
         omniBridgeFee = _omniBridgeFee;
+        omnicatERC20 = _omnicatERC20;
     }
 
     // ===================== Admin-Only External Functions (Hot) ===================== //
@@ -116,7 +121,11 @@ contract OmniNFT is
             require(success, "failed to refund");
         }
 
-        omnicat.sendAndCall{value: bridgeFee}(msg.sender, BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber), lzCallParams);
+        omnicatERC20.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
+
+        omnicatERC20.safeApprove(address(omnicat), mintNumber*MINT_COST);
+
+        omnicat.sendAndCall{value: bridgeFee}(address(this), BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber), lzCallParams);
     }
 
     function estimateBurnFees(

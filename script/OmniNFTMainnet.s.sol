@@ -3,11 +3,12 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
 
-import { OmniNFT } from "../src/OmniNFT.sol";
+import { OmniNFTMainnet } from "../src/OmniNFTMainnet.sol";
 import { IOmniCat } from "../src/interfaces/IOmniCat.sol";
+import { IERC20 } from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 
-contract DeployOmniNFT is Script {
+contract DeployOmniNFTMainnet is Script {
 
     function run() external {
 
@@ -19,6 +20,7 @@ contract DeployOmniNFT is Script {
         uint256 MINT_COST = vm.envUint("MINT_COST");
         address layerZeroEndpoint = vm.envAddress("LAYER_ZERO_ENDPOINT");
         IOmniCat omnicat = IOmniCat(vm.envAddress("OMNICAT_ADDRESS"));
+        IERC20 omnicatERC20 = IOmniCat(vm.envAddress("OMNICAT_ERC20_ADDRESS"));
         address omniNFTA = vm.envAddress("OMNI_NFT_A");
         uint16 baseChainId = uint16(vm.envUint("BASE_CHAIN_ID"));
         uint16 OMNI_BRIDGE_FEE = uint16(vm.envUint("OMNI_BRIDGE_FEE"));
@@ -29,12 +31,13 @@ contract DeployOmniNFT is Script {
         uint deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(deployerPrivateKey);
 
-        OmniNFT omniNFT = new OmniNFT(
+        OmniNFTMainnet omniNFT = new OmniNFTMainnet(
             BaseChainInfo({
                 BASE_CHAIN_ID: baseChainId,
                 BASE_CHAIN_ADDRESS: address(omniNFTA)
             }),
             omnicat,
+            omnicatERC20,
             NftInfo({
                 baseURI: BASE_URI,
                 MINT_COST: MINT_COST,
@@ -47,15 +50,6 @@ contract DeployOmniNFT is Script {
             address(layerZeroEndpoint),
             OMNI_BRIDGE_FEE
         );
-
-        // THIS NEEDS TO BE CALLED EVENTUALLY
-        // omniNFT.setTrustedRemoteAddress(baseChainId, abi.encodePacked(omniNFTA));
-        // omniNFT.setMinDstGas(baseChainId, 0, 1e5);
-        // omniNFT.setMinDstGas(baseChainId, 1, 1e5);
-
-
-
-        // payable(address(OmniNFT)).transfer(0.01 ether);
 
         vm.stopBroadcast();
     }

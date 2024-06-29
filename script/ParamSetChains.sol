@@ -17,6 +17,10 @@ contract ParamSetChains is Script {
     uint16 public constant CANTO_CHAIN_ID = uint16(159);
     uint16 public constant BLAST_CHAIN_ID = uint16(243);
 
+    uint256 public constant ARBITRUM_OMNI_MIN_DST_GAS = 1.1e6;
+    uint256 public constant DEFAULT_OMNI_MIN_DST_GAS = 2.1e5;
+    uint256 public constant DST_CHAIN_ID_TO_TRANSFER_GAS = 3e5;
+
     uint16[] public chainIds = [
         ETHEREUM_CHAIN_ID,
         POLYGON_CHAIN_ID,

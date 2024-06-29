@@ -33,4 +33,17 @@ contract testTransactions is BaseTest {
         omniNFT.unpauseContract();
         vm.stopPrank();
     }
+
+    function extra() public {
+        uint256[] memory tokenIds = new uint256[](10);
+        for(uint256 i=0;i<10;){
+            tokenIds[i] = i;
+            unchecked {
+                i++;
+            }
+        }
+        bytes memory payload = abi.encode(user1, tokenIds);
+        (bytes memory toAddressBytes, ) = abi.decode(payload, (bytes, uint[]));
+        vm.assertEq(toAddressBytes, abi.encode(user1));
+    }
 }
