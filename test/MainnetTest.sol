@@ -4,10 +4,16 @@ import "forge-std/Test.sol";
 import { OmniNFTMainnet } from "../src/OmniNFTMainnet.sol";
 import { OmniNFTA } from "../src/OmniNFTA.sol";
 import { LZEndpointMock } from "@LayerZero-Examples/contracts/lzApp/mocks/LZEndpointMock.sol";
+import { ProxyOFTV2 } from "@LayerZero-Examples/contracts/token/oft/v2/ProxyOFTV2.sol";
 import { OmniCatMock } from "../src/mocks/OmniCatMock.sol";
 import { BaseChainInfo, MessageType, NftInfo } from "../src/utils/OmniNftStructs.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import { IBlast } from "../src/interfaces/IBlast.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ERC20Mock} from "../src/mocks/ERC20Mock.sol";
+import { IOmniCat } from "../src/interfaces/IOmniCat.sol";
+import { ICommonOFT } from "@LayerZero-Examples/contracts/token/oft/v2/interfaces/ICommonOFT.sol";
 
 contract MainnetTest is Test {
     OmniNFTA public omniNFTA;
@@ -16,7 +22,8 @@ contract MainnetTest is Test {
     LZEndpointMock public layerZeroEndpointMock1;
     OmniCatMock public omnicatMock1;
     LZEndpointMock public layerZeroEndpointMock2;
-    OmniCatMock public omnicatMock2;
+    ProxyOFTV2 public omnicatMock2;
+    ERC20Mock public omnicatMockERC20;
 
     uint16 firstChainId = 1;
     uint16 secondChainId = 2;
@@ -42,8 +49,10 @@ contract MainnetTest is Test {
         layerZeroEndpointMock1 = new LZEndpointMock(firstChainId);
         layerZeroEndpointMock2 = new LZEndpointMock(secondChainId);
 
-        omnicatMock1 = new OmniCatMock(address(layerZeroEndpointMock1), 100e30, 8);
-        omnicatMock2 = new OmniCatMock(address(layerZeroEndpointMock2), 100e30, 8);
+        omnicatMock1 = new OmniCatMock(address(layerZeroEndpointMock1), 0, 8);
+        omnicatMockERC20 = new ERC20Mock(1e18);
+        omnicatMockERC20.initialize("", "", 18);
+        omnicatMock2 = new ProxyOFTV2(address(omnicatMockERC20), 8, address(layerZeroEndpointMock2));
 
         omnicatMock1.setMinDstGas(secondChainId, uint16(0), 1e5);
         omnicatMock1.setMinDstGas(secondChainId, uint16(1), 1e5);
@@ -52,17 +61,6 @@ contract MainnetTest is Test {
         omnicatMock2.setMinDstGas(firstChainId, uint16(0), 1e5);
         omnicatMock2.setMinDstGas(firstChainId, uint16(1), 1e5);
         omnicatMock2.setTrustedRemoteAddress(firstChainId, abi.encodePacked(address(omnicatMock1)));
-
-        omnicatMock1.transfer(user1, 100e25);
-        omnicatMock1.transfer(user2, 100e25);
-        omnicatMock1.transfer(user3, 100e25);
-        omnicatMock1.transfer(user4, 100e25);
-
-        omnicatMock2.transfer(user1, 100e25);
-        omnicatMock2.transfer(user2, 100e25);
-        omnicatMock2.transfer(user3, 100e25);
-        omnicatMock2.transfer(user4, 100e25);
-
 
         vm.mockCall(
             address(BLAST),
@@ -78,7 +76,7 @@ contract MainnetTest is Test {
             omnicatMock1,
             NftInfo({
                 baseURI: "http://omni.xyz",
-                MINT_COST: 250000e18,
+                MINT_COST: 25000e10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",
@@ -94,11 +92,11 @@ contract MainnetTest is Test {
         });
         omniNFT = new OmniNFTMainnet(
             baseChainInfo,
-            omnicatMock2,
-            omnicatMock2,
+            IOmniCat(address(omnicatMock2)),
+            IERC20(address(omnicatMockERC20)),
             NftInfo({
                 baseURI: "http://omni.xyz",
-                MINT_COST: 250000e18,
+                MINT_COST: 25000e10,
                 MAX_MINTS_PER_ACCOUNT: 50,
                 COLLECTION_SIZE: 10,
                 name: "omniNFT",
@@ -133,27 +131,48 @@ contract MainnetTest is Test {
         layerZeroEndpointMock1.setDestLzEndpoint(address(omniNFT), address(layerZeroEndpointMock2));
         layerZeroEndpointMock2.setDestLzEndpoint(address(omniNFTA), address(layerZeroEndpointMock1));
 
+        omnicatMockERC20.approve(address(omnicatMock2), 100e30);
+        ICommonOFT.LzCallParams memory lzCallParams = ICommonOFT.LzCallParams({
+            refundAddress: payable(address(admin)),
+            zroPaymentAddress: address(0),
+            adapterParams: abi.encodePacked(uint16(1), mindstGasExtra)
+        });
+        bytes32 adminBytes = bytes32(uint256(uint160(admin)));
+        (uint256 fee,) = omnicatMock2.estimateSendFee(firstChainId, adminBytes, 5e17, false, lzCallParams.adapterParams);
+        vm.deal(address(admin), 2*fee+1e20);
+        omnicatMock2.sendFrom{value: 2*fee}(admin, firstChainId, adminBytes, 5e17, lzCallParams);
+
+        omnicatMock1.transfer(user1, 1e17);
+        omnicatMock1.transfer(user2, 1e17);
+        omnicatMock1.transfer(user3, 1e17);
+        omnicatMock1.transfer(user4, 1e17);
+
+        omnicatMockERC20.transfer(user1, 1e17);
+        omnicatMockERC20.transfer(user2, 1e17);
+        omnicatMockERC20.transfer(user3, 1e17);
+        omnicatMockERC20.transfer(user4, 1e17);
+
         vm.stopPrank();
 
         vm.startPrank(user1);
         vm.deal(address(user1), 1e20);
-        omnicatMock1.approve(address(omniNFTA), 100e25);
-        omnicatMock2.approve(address(omniNFT), 100e25);
+        omnicatMock1.approve(address(omniNFTA), 1e17);
+        omnicatMockERC20.approve(address(omniNFT), 1e17);
         vm.stopPrank();
         vm.startPrank(user2);
         vm.deal(address(user2), 1e20);
-        omnicatMock1.approve(address(omniNFTA), 100e25);
-        omnicatMock2.approve(address(omniNFT), 100e25);
+        omnicatMock1.approve(address(omniNFTA), 1e17);
+        omnicatMockERC20.approve(address(omniNFT), 1e17);
         vm.stopPrank();
         vm.startPrank(user3);
         vm.deal(address(user3), 1e20);
-        omnicatMock1.approve(address(omniNFTA), 100e25);
-        omnicatMock2.approve(address(omniNFT), 100e25);
+        omnicatMock1.approve(address(omniNFTA), 1e17);
+        omnicatMockERC20.approve(address(omniNFT), 1e17);
         vm.stopPrank();
         vm.startPrank(user4);
         vm.deal(address(user4), 1e20);
-        omnicatMock1.approve(address(omniNFTA), 100e25);
-        omnicatMock2.approve(address(omniNFT), 100e25);
+        omnicatMock1.approve(address(omniNFTA), 1e17);
+        omnicatMockERC20.approve(address(omniNFT), 1e17);
         vm.stopPrank();
         vm.warp(timestamp);
     }

@@ -123,6 +123,8 @@ contract OmniNFTMainnet is
 
         omnicatERC20.safeTransferFrom(msg.sender, address(this), mintNumber*MINT_COST);
 
+        omnicatERC20.safeApprove(address(omnicat), mintNumber*MINT_COST);
+
         omnicat.sendAndCall{value: bridgeFee}(address(this), BASE_CHAIN_INFO.BASE_CHAIN_ID, baseChainAddressBytes, mintNumber*MINT_COST, payload, uint64(dstChainIdToTransferGas[BASE_CHAIN_INFO.BASE_CHAIN_ID] * mintNumber), lzCallParams);
     }
 
