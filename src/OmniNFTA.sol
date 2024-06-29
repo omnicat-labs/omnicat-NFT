@@ -168,7 +168,7 @@ contract OmniNFTA is
         MessageType messageType = MessageType(uint8(_payload[0]));
         if(messageType == MessageType.MINT){
             (address userAddress, uint256 mintNumber) = abi.decode(_payload[1:], (address, uint256));
-            if((_amount < mintNumber*MINT_COST) || (mintStartTimestamp > block.timestamp) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) || (UserMintedNumber[msg.sender] + mintNumber > MAX_MINTS_PER_ACCOUNT)){
+            if((_amount < mintNumber*MINT_COST) || (mintStartTimestamp > block.timestamp) || (nextTokenIdMint + mintNumber > COLLECTION_SIZE) || (UserMintedNumber[userAddress] + mintNumber > MAX_MINTS_PER_ACCOUNT)){
                 omniUserRefund[userAddress][_srcChainId] += _amount;
                 emit SetUserOmniRefund(userAddress, _srcChainId, omniUserRefund[userAddress][_srcChainId]);
                 return;

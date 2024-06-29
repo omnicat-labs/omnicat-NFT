@@ -299,5 +299,4 @@ contract testTransactions is BaseTest {
         omniNFTA.clearCredits(payload);
         vm.assertEq(omniNFTA.balanceOf(user1),10);
     }
-
 }
